@@ -3,10 +3,10 @@
 """
 Created on Wed Mar 15 17:56:21 2017
 
-@author: lena
+@author: Liwen
 """
 import numpy as np  
-import rrc
+
 from commpy.utilities import bitarray2dec
 
 def generate_training_bits(L):
@@ -18,16 +18,13 @@ def divide_index_data_bits(idbits,Ni):
     #   idbits=idbit[:idbits.size-idbits.size % (Ni+Nd)]
         return idbits[:Ni],idbits[Ni:]
    
-def databits_mapping(M,dbits):
-    mpsk_map = np.exp(1j * 2 * np.pi * np.arange(M) / M)
-    indices=bitarray2dec(dbits) 
-    return  mpsk_map[indices]
 
-def databits_pulseforming(symbols):
-    sps = 2  # samples per symbol(!=>ueberabtastung)
-    K = 8  # length of the impulse response in symbols (!8*4 =32 index in Zeitbereich)
-    rho = 0.5  # RRC rolloff factor (!bandbreite*rolloff factor)
-    g = rrc.get_rrc_ir(K * sps + 1, sps, 1, rho)  # RRC impulse response
+def databits_mapping(mapp,dbits):
+    indices=bitarray2dec(dbits) 
+    return  mapp[indices]
+
+def databits_pulseforming(symbols,g):
+
     return np.convolve(g, symbols, mode='same')
     
 def mixer(s_BB,fc,fs):
@@ -38,5 +35,9 @@ def mixer(s_BB,fc,fs):
     sine = np.sqrt(2) * np.sin(2 * np.pi * fc * t)
     return x * cosine - y * sine
 
-#def antenna_choicer(H,ibits,s_BB):
-#    return r_BP
+def antenna_choicer(H,ibits,s_BB):
+    s_a_index=bitarray2dec(ibits)
+    s=np.zeros(len(H))
+    s[s_a_index,]=s_BB
+    r_BP=s@H
+    return r_BP
