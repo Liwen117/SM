@@ -11,7 +11,7 @@ import math
 import rrc
 import sender_function as s
 import receiver_function as r
-SA=64
+SA=8
 #number of sender antennas
 RA=4
 #number of receiver antennas
@@ -34,12 +34,13 @@ K = 8  # length of the impulse response in symbols (!8*4 =32 index in Zeitbereic
 rho = 0.5  # RRC rolloff factor (!bandbreite*rolloff factor)
 g = rrc.get_rrc_ir(K * sps + 1, sps, 1, rho)  
 
-H=np.ones((SA,RA))
+H=[np.arange(55,59),np.arange(6,10),np.arange(4,8),np.arange(24,28),np.arange(66,70),np.arange(10,14),np.arange(2,6),np.arange(86,90)]
 ##Channel matrix
 SNR_noise_dB=20
-SNR_RA_dB=20
+SNR_RA_dB=0
 
-r_index=1
+
+r_index=2
 
 idbits=s.generate_training_bits(Ni+Nd)
 ibits,dbits=s.divide_index_data_bits(idbits,Ni)
@@ -48,9 +49,9 @@ s_BB=s.databits_pulseforming(symbols,g)
 s_BP=s.mixer(s_BB,fc,fs)
 #Rauschen
 noise_variance_linear = 10**(-SNR_noise_dB / 10)
-n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(s_BP.size) + 1j*np.random.randn(s_BP.size))
+n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(RA) + 1j*np.random.randn(RA))
 
-r_BP=s.antenna_choicer(H,ibits,s_BB)+n
+r_BP=s.antenna_choicer(H,ibits,s_BP)+n
 
 #symbols_up = np.zeros(N * sps)
 #symbols_up[::sps] = symbols
@@ -59,7 +60,7 @@ r_BP=s.antenna_choicer(H,ibits,s_BB)+n
 #group_delay = (g.size - 1) // 2
 #rx_signal = rx_signal[2 * group_delay: -2 * group_delay]
 
-r_BB=r.dmixer(r_BP)
+r_BB=r.dmixer(r_BP,fc,fs)
 r_BB_MF=r.Matched_Filter(r_BB,g)  
-y=r.detector(SNR_RA_dB,H,mpsk_map,r_BB,r_index) 
+yi,yd=r.detector(SNR_RA_dB,H,mpsk_map,r_BB,r_index) 
 

@@ -18,12 +18,13 @@ def dmixer(r_BP,fc,fs):
     return r_BP * cosine - r_BP * sine
 
 def Matched_Filter(r_BB,h):
-    return np.convolve(h, r_BB, mode='same')
+    return np.convolve(np.conj(h), r_BB, mode='same')
     
 
-def detector(SNR,H,mapp,r_BB_MF,r_index):
-    g=np.zeros(len(H)*mapp.size)
+def detector(SNR_dB,H,mapp,r_BB_MF,r_index):
+    g=np.zeros((len(H),mapp.size))
     for j in range(1,len(H)):
         for q in range(1,mapp.size):
-            g[j][q]=np.sqrt(SNR)*np.linalg.norm(H[j][r_index]*mapp[q])-2*np.real(np.matrix(r_BB_MF).H*H[j][r_index]*mapp[q])
+#            g[j][q]=1
+            g[j][q]=np.sqrt(10**(-SNR_dB / 10))*np.linalg.norm(H[j][r_index]*mapp[q])-2*np.real(np.matrix(r_BB_MF[r_index]).H*H[j][r_index]*mapp[q])
     return np.unravel_index(np.argmax(g), (len(H),mapp.size))

@@ -35,9 +35,11 @@ def mixer(s_BB,fc,fs):
     sine = np.sqrt(2) * np.sin(2 * np.pi * fc * t)
     return x * cosine - y * sine
 
-def antenna_choicer(H,ibits,s_BB):
+def antenna_choicer(H,ibits,s_BP):
     s_a_index=bitarray2dec(ibits)
-    s=np.zeros(len(H))
-    s[s_a_index,]=s_BB
-    r_BP=s@H
+    s=(1+0j)*np.zeros(len(H))
+   # r_BP=np.zeros(H.size/len(H))
+    for i in range(1,np.size(s_BP)):
+        s[s_a_index]=s_BP[i]
+        r_BP=s@H
     return r_BP
