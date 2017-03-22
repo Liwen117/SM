@@ -13,18 +13,18 @@ from commpy.utilities import dec2bitarray
 #dmixer
 def dmixer(r_BP,fc,fs):
     t = np.arange(len(r_BP)) / fs
-    cos = np.sqrt(2) * np.cos(2 * np.pi * fc * t)
-    sin = np.sqrt(2) * np.sin(2 * np.pi * fc * t)
+    cosine = np.sqrt(2) * np.cos(2 * np.pi * fc * t)
+    sine = np.sqrt(2) * np.sin(2 * np.pi * fc * t)
     r_BBr=np.zeros(r_BP.shape)
     r_BBi=np.zeros(r_BP.shape)
     for i in range(0,r_BP.shape[1]):
-        r_BBr[:,i]=r_BP[:,i] * cos 
-        r_BBi[:,i]=r_BP[:,i] * (-sin)
+        r_BBr[:,i]=r_BP[:,i] * cosine 
+        r_BBi[:,i]=r_BP[:,i] * sine
     return r_BBr,r_BBi
 
 def Matched_Filter(r_BB,h,sps):
     group_delay = (h.size - 1) // 2
-    r=np.zeros((len(r_BB)-h.size+1,r_BB.shape[1]))*(1+1j)
+    r=np.zeros((len(r_BB)-h.size+1,r_BB.shape[1]))
     for i in range(0,r_BB.shape[1]):
         a= np.convolve(h, r_BB[:,i])
         r[:,i] = a[ 2*group_delay: - 2*group_delay]

@@ -33,27 +33,27 @@ def databits_pulseforming(symbols,g,sps):
     
 def mixer(s_BBr,s_BBi,fc,fs):
     t = np.arange(s_BBr.size) / fs
-    cos = np.sqrt(2) * np.cos(2 * np.pi * fc * t)
-    sin = np.sqrt(2) * np.sin(2 * np.pi * fc * t)
-    return s_BBr * cos - s_BBi * sin
+    cosine = np.sqrt(2) * np.cos(2 * np.pi * fc * t)
+    sine = np.sqrt(2) * np.sin(2 * np.pi * fc * t)
+    return s_BBr * cosine - s_BBi * sine
 
 
 
 def channel(H,ibits,s,RA,SNR_dB,SNR_RA_dB,g,sps):
     noise_variance_linear = 10**(-SNR_dB / 10)
     s_a_index=bitarray2dec(ibits)
-    #turn index bits to the Antenne index
  #！！sps!!   
-
+#    s=(1+0j)*np.zeros(len(H))
     group_delay = (g.size - 1) // 2
     c=s_a_index[0:group_delay]
     s_a_index=np.concatenate((c,s_a_index,c))
-#????
-    r_BP=np.zeros((s.size,RA))
-    #initiate received signal in Bandpass
+#    s_BP = s_BP[ group_delay: - group_delay:sps]
+    r_BP=np.zeros((s.size,RA))+1j*np.zeros((s.size,RA))
+#    for i in range(1,np.size(s_BP)):
+#        s[s_a_index]=s_BP[i]   
     for j in range(0,RA):
         for i in range(0,s_a_index.size):
             n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(s.size)+1j*np.random.randn(s.size) )
             r_BP[i,j]=np.sqrt(10**(SNR_RA_dB / 10))*s[i]*H[j,s_a_index[i]]
-            r_BP[:,j]=np.real(r_BP[:,j]+n)
+            r_BP[:,j]=r_BP[:,j]+n
     return r_BP
