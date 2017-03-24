@@ -10,7 +10,7 @@ def ML_FLL(r,g_mf):
     k = np.arange(np.ceil(-len(g_mf)/2),np.floor(len(g_mf)/2)+1)
     g_dmf= 2*np.pi*T*k[:]*g_mf[:]
     # Ausgabe initialisieren
-    x_out = np.zeros([len(r)/4,1])*(1+1j)
+    x_out = np.zeros([len(r)/4,1],complex)
     f = 0
     #
     #Schrittweite
@@ -19,45 +19,45 @@ def ML_FLL(r,g_mf):
     # temp. Variable: Speicherinhalt x-Zweig
     #persistent x_buf
     #if isempty(x_buf)
-    #    x_buf = complex(zeros(length(g_mf)-1,1));
+    x_buf = np.zeros([len(g_mf)-1,1],complex);
     #end
     #
     #persistent x_1
     #if isempty(x_1)
-    #    x_1 = complex(0);
+    x_1 = complex(0);
     #end
     #
     #% temp. Variable: Speicherinhalt y-Zweig
     #persistent y_buf
     #if isempty(y_buf)
-    #    y_buf = complex(zeros(length(g_dmf)-1,1));
+    y_buf = np.zeros([len(g_dmf)-1,1],complex);
     #end
     #
     #persistent y_1
     #if isempty(y_1)
-    #    y_1 = complex(0);
+    y_1 = complex(0);
     #end
     #
     #% Frequenz
     #persistent nu
     #if isempty(nu)
-    #    nu = 0;
+    nu = 0;
     #end
     #
     #% Phaseninkrement
     #persistent phi
     #if isempty(phi)
-    #    phi = 0;
+    phi = 0;
     #end
     #
     #% temp. Zaehlervariable
-    #cnt=1;
+    cnt=1;
     #
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #% Phasenkorrektur
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #
-    for ii in range(1,length(r)+1):
+    for ii in range(1,len(r)+1):
     #    
     #    % Korrektur des Eingangswertes
         r[ii] = r[ii] * np.exp(1j*(-np.pi))
@@ -90,7 +90,7 @@ def ML_FLL(r,g_mf):
             y_1 = y;
     #        
     #        % Ausgabe, Faktor 2 ueberabgetastet!
-            x_out(cnt) = x;
+            x_out[cnt] = x;
             cnt=cnt+1;
     #    end    
     #   

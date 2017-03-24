@@ -43,7 +43,7 @@ def mixer(s_BBr,s_BBi,fc,fs):
 #    s_a_index=bitarray2dec(ibits)
 #    #turn index bits to the Antenne index
 # 
-#    r=np.zeros((s.size,RA))*(1+1j)
+#    r=np.zeros((s.size,RA),complex)
 #    #initiate received signal in Bandpass
 #    for j in range(0,RA):
 #        for i in range(0,s_a_index.size):
@@ -62,7 +62,6 @@ def channel(H,ibits,s,RA,SNR_dB,SNR_RA_dB,g,sps):
     group_delay = (g.size - 1) // 2
     c=s_a_index[0:group_delay]
     s_a_index=np.concatenate((c,s_a_index,c))
-#????
     r=np.zeros((s.size,RA))*(1+1j)
     #initiate received signal in Bandpass
     for j in range(0,RA):
@@ -71,3 +70,13 @@ def channel(H,ibits,s,RA,SNR_dB,SNR_RA_dB,g,sps):
             r[i,j]=np.sqrt(10**(SNR_RA_dB / 10))*s[i]*H[j,s_a_index[i]]
             r[:,j]=r[:,j]+n
     return r
+
+
+
+#idbits=s.generate_training_bits(N*(Ni+Nd))
+#ibits,dbits=s.divide_index_data_bits(idbits,Ni,Nd)
+#symbols=s.databits_mapping(bpsk_map,dbits)
+#s_BBr=s.databits_pulseforming(symbols.real,filter_.ir(),filter_.n_up)
+#s_BBi=s.databits_pulseforming(symbols.imag,filter_.ir(),filter_.n_up)
+#s_BB=s_BBr+1j*s_BBi
+
