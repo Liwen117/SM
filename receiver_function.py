@@ -34,7 +34,7 @@ def Matched_Filter(r_BB,h,sps):
 
 def detector(SNR_dB,H,mapp,r):
     n=H.shape[1]
-    g=np.zeros((n,mapp.size,r.shape[0])) 
+    g=np.zeros((n,mapp.size,r.shape[0]))*(1+1j)
     yi=np.zeros(r.shape[0])
     yd=np.zeros(r.shape[0])
     for i in range(0,r.shape[0]):

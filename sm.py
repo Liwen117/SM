@@ -16,56 +16,51 @@ def sm(SNR_noise_dB,SNR_RA_dB):
     #number of sender antennas
     RA=8
     #number of receiver antennas
-    M=4
-    #data bits modulation order (PSK)
+    M=2
+    #data bits modulation order (BPSK)
     
-    mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-    #mpsk_map=np.array([1,-1])
-    N=5000
+    #qpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
+    bpsk_map=np.array([1,-1])
+    N=1000
     #number of training symbols
     Ni=int(math.log2(SA))
     #number of Index bits per symbol
     Nd=int(math.log2(M))
     #number of Data bits per symbol
-    fs = 10000  
-    # sampling rate (samples per second)
-    fc=2*10e8
-    #Carrier Frequency
+    
     
     # RRC impulse response
-    sps = 1  # samples per symbol(!=>ueberabtastung)
-    K = 8  # length of the impulse response in symbols (!8*4 =32 index in Zeitbereich)
-    rho = 0.5  # RRC rolloff factor (!bandbreite*rolloff factor)
-    g = rrc.get_rrc_ir(K * sps + 1, sps, 1, rho)  
-
-    H=1/np.sqrt(2)*(np.random.randn(RA,SA)+1j*np.random.randn(RA,SA))
-       
+#    sps = 1  # samples per symbol(!=>ueberabtastung)
+#    K = 16  # length of the impulse response in symbols (!8*4 =32 index in Zeitbereich)
+#    rho = 0  # RRC rolloff factor (!bandbreite*rolloff factor)
+#    g = rrc.get_rrc_ir(K * sps + 1, sps, 1, rho)  
+    
+    H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1/np.sqrt(2)*(np.random.randn(RA,SA)))
+    #H=np.ones([RA,SA])  
     ##Channel matrix
-#    SNR_noise_dB=20
-#    SNR_RA_dB=10
-#    
+#    SNR_noise_dB=50
+#    SNR_RA_dB=0
+#    #    
     
     
     
     idbits=s.generate_training_bits(N*(Ni+Nd))
     ibits,dbits=s.divide_index_data_bits(idbits,Ni,Nd)
-    symbols=s.databits_mapping(mpsk_map,dbits)
-    s_BBr=s.databits_pulseforming(symbols.real,g,sps)
-    s_BBi=s.databits_pulseforming(symbols.imag,g,sps)
-    
-    s_BP=s.mixer(s_BBr,s_BBi,fc,fs)
-    
-    
+    symbols=s.databits_mapping(bpsk_map,dbits)
+    #s_BBr=s.databits_pulseforming(symbols.real,g,sps)
+    #s_BBi=s.databits_pulseforming(symbols.imag,g,sps)
+    #s_BB=s_BBr+1j*s_BBi
     #
-    r_BP=s.channel(H,ibits,s_BP,RA,SNR_noise_dB,SNR_RA_dB,g,sps)
-    r_BBr,r_BBi=r.dmixer(r_BP,fc,fs)
-    r_BBr_MF=r.Matched_Filter(r_BBr,g,sps)  
-    r_BBi_MF=r.Matched_Filter(r_BBi,g,sps) 
-    r_BB_MF=r_BBr_MF+1j*r_BBi_MF
+    #
+    #
+    #r_BB=s.channel(H,ibits,s_BB,RA,SNR_noise_dB,SNR_RA_dB,g,sps)
+    #r_BBr_MF=r.Matched_Filter(r_BB.real,g,sps)  
+    #r_BBi_MF=r.Matched_Filter(r_BB.imag,g,sps)
+    #r_BB_MF=r_BBr_MF+1j*r_BBi_MF
     
+    r_=s.channel(H,ibits,symbols,RA,SNR_noise_dB,SNR_RA_dB)
     
-    
-    yi,yd=r.detector(SNR_RA_dB,H,mpsk_map,r_BB_MF) 
+    yi,yd=r.detector(SNR_RA_dB,H,bpsk_map,r_) 
     beri=r.BER(yi,ibits,Ni)
     berd=r.BER(yd,dbits,Nd)
     #print(beri,berd)
