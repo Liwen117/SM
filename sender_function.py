@@ -38,29 +38,11 @@ def mixer(s_BBr,s_BBi,fc,fs):
     return s_BBr * cos - s_BBi * sin
 
 
-def channel(H,ibits,s,RA,SNR_dB,SNR_RA_dB):
-    noise_variance_linear = 10**(-SNR_dB / 10)
-    s_a_index=bitarray2dec(ibits)
-    #turn index bits to the Antenne index
- 
-    r=np.zeros((s.size,RA))*(1+1j)
-    #initiate received signal in Bandpass
-    for j in range(0,RA):
-        for i in range(0,s_a_index.size):
-            n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(s.size)+1j*np.random.randn(s.size) )
-            r[i,j]=np.sqrt(10**(SNR_RA_dB / 10))*s[i]*H[j,s_a_index[i]]
-            r[:,j]=r[:,j]+n
-    return r
-#def channel(H,ibits,s,RA,SNR_dB,SNR_RA_dB,g,sps):
+#def channel(H,ibits,s,RA,SNR_dB,SNR_RA_dB):
 #    noise_variance_linear = 10**(-SNR_dB / 10)
 #    s_a_index=bitarray2dec(ibits)
 #    #turn index bits to the Antenne index
-# #！！sps!!   
-#
-#    group_delay = (g.size - 1) // 2
-#    c=s_a_index[0:group_delay]
-#    s_a_index=np.concatenate((c,s_a_index,c))
-##????
+# 
 #    r=np.zeros((s.size,RA))*(1+1j)
 #    #initiate received signal in Bandpass
 #    for j in range(0,RA):
@@ -69,3 +51,23 @@ def channel(H,ibits,s,RA,SNR_dB,SNR_RA_dB):
 #            r[i,j]=np.sqrt(10**(SNR_RA_dB / 10))*s[i]*H[j,s_a_index[i]]
 #            r[:,j]=r[:,j]+n
 #    return r
+
+
+def channel(H,ibits,s,RA,SNR_dB,SNR_RA_dB,g,sps):
+    noise_variance_linear = 10**(-SNR_dB / 10)
+    s_a_index=bitarray2dec(ibits)
+    #turn index bits to the Antenne index
+ #！！sps!!   
+
+    group_delay = (g.size - 1) // 2
+    c=s_a_index[0:group_delay]
+    s_a_index=np.concatenate((c,s_a_index,c))
+#????
+    r=np.zeros((s.size,RA))*(1+1j)
+    #initiate received signal in Bandpass
+    for j in range(0,RA):
+        for i in range(0,s_a_index.size):
+            n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(s.size)+1j*np.random.randn(s.size) )
+            r[i,j]=np.sqrt(10**(SNR_RA_dB / 10))*s[i]*H[j,s_a_index[i]]
+            r[:,j]=r[:,j]+n
+    return r
