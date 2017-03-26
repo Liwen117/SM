@@ -33,9 +33,12 @@ class sender():
         self.symbols=self.mapp[indices]
     
     def databits_pulseforming(self,symbs):
-        symbols_up = np.zeros(symbs.size * self.sps)
-        symbols_up[:: self.sps] = symbs
-        return np.convolve(self.ir, symbols_up)
+        s = np.zeros(symbs.size*self.sps+self.ir.size-1)
+        for i in range(symbs.size):
+            s[i*self.sps:i*self.sps+self.ir.size]+=symbs[i]*self.ir
+        return s
+#        symbols_up = np.repeat(symbs,self.sps)
+#        return np.convolve(self.ir, symbols_up)
 
         
 #    def mixer(s_BBr,s_BBi,fc,fs):
@@ -49,7 +52,6 @@ class sender():
         self.databits_mapping()
         s_BBr=self.databits_pulseforming(np.real(self.symbols))
         s_BBi=self.databits_pulseforming(np.imag(self.symbols))
-        
         return s_BBr+1j*s_BBi
 
 #def channel(H,ibits,s,RA,SNR_dB,SNR_RA_dB):
