@@ -6,24 +6,27 @@ Created on Fri Mar 24 17:18:38 2017
 @author: lena
 """
 import numpy as np
-
+from commpy.utilities import bitarray2dec 
 
 #data-aided ML Approximation (Voraussetzung:f_off<<1/T)
-def ML_approx(h,filter_,r,T,symbols):
+def ML_approx(filter_,r,T,symbols,ibits,H):
     f_delta=100
     group_delay = (filter_.ir().size - 1) // 2
-    r_=np.zeros((len(r)-filter_.ir().size+1),complex)
-    p=np.zeros([f_delta,h.size])
-    for j in range(0,h.size):
-        a= np.convolve(h[j]*filter_.ir(), r)
-        r_= a[ 2*group_delay: - 2*group_delay]
-        r_mf = r_[::filter_.n_up]
+    p=np.zeros([f_delta,H.shape[0]],complex)
+    f_o=np.zeros(H.shape[0])
+    r_up=np.zeros([r.shape[0]-filter_.ir().size+1,H.shape[0]],complex)
+    r_=np.zeros([symbols.size,H.shape[0]])
+    for j in range(0,H.shape[0]):
+        a= np.convolve(filter_.ir(), r[:,j])
+        r_up[:,j]= a[ 2*group_delay: - 2*group_delay]
+        r_[:,j] = r_up[::filter_.n_up,j]
+        s_a_index=bitarray2dec(ibits)
         for f in range(0,f_delta):
-            for i in range(0,r_mf.size):
-                p[f,j]=symbols[i]*r_mf[i]*np.exp(-1j*2*np.pi*f/f_delta*i*T/filter_.n_up)
-                q=np.abs(p)
-                f_o=np.argmax(q[:,j])/f_delta
-    return f_o
+            for i in range(0,r_.shape[0]):
+                off_=np.exp(-1j*2*np.pi*f/f_delta*T*i)
+                p[f,j]+=symbols[i]*r_[i,j]*H[j,s_a_index[i]]*off_
+        f_o[j]=np.argmax(np.abs(p[:,j]))/f_delta
+    print(f_o)
 
 #non data-aided
 def FLL(r,g_mf):

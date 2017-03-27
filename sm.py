@@ -5,7 +5,7 @@ Created on Wed Mar 15 14:25:31 2017
 
 @author: Liwen 
 """
-
+from commpy.utilities import dec2bitarray,bitarray2dec 
 import numpy as np  
 from rrc import rrcfilter
 from sender_class import sender
@@ -13,7 +13,7 @@ from receiver_class import receiver
 import f_sync as fr
 from f_sync import ML_approx
 #def sm(SNR_noise_dB,SNR_RA_dB,f_off):
-SNR_noise_dB=50
+SNR_noise_dB=100
 SNR_RA_dB=0
 SA=4
 #number of sender antennas
@@ -23,17 +23,17 @@ M=2
 #data bits modulation order (BPSK)
 bpsk_map=np.array([1,-1])
 #qpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-N=100
+N=500
 #number of symbols
-T=0.0001
+T=0.01
 #symbol duration
-f_off=0.63
+f_off=0.46
 #number of training symbols
 Ni=int(np.log2(SA))
 #number of Index bits per symbol
 Nd=int(np.log2(M))
 #number of Data bits per symbol
-filter_=rrcfilter(8*1+1,1 , 1, 0)
+filter_=rrcfilter(8*2+1,2 , 1, 0)
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
 # besser mit rho=1
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
@@ -44,10 +44,34 @@ H=np.abs(H)
 sender_=sender(N,Ni,Nd,bpsk_map,filter_)
 #tx
 s=sender_.bbsignal()
-r_off=s
-#r_off=sender_.bbsignal()*np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
+#r_off=s
+
 #with frequency offset
-receiver_=receiver(H,sender_,r_off,SNR_noise_dB,SNR_RA_dB,filter_,bpsk_map)
+symbols=sender_.symbols
+ibits=sender_.ibits
+receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,bpsk_map)
+off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
+r=receiver_.channel()*np.repeat(off,8).reshape([-1,8])
+f_of=ML_approx(filter_,r,T,symbols,ibits,H)
+print(f_of)
+
+#f_delta=100
+#group_delay = (filter_.ir().size - 1) // 2
+#p=np.zeros([f_delta,H.shape[0]],complex)
+#f_o=np.zeros(H.shape[0])
+#r_up=np.zeros([r.shape[0]-filter_.ir().size+1,H.shape[0]],complex)
+#r_=np.zeros([symbols.size,H.shape[0]])
+#for j in range(0,H.shape[0]):
+#    a= np.convolve(filter_.ir(), r[:,j])
+#    r_up[:,j]= a[ 2*group_delay: - 2*group_delay]
+#    r_[:,j] = r_up[::filter_.n_up,j]
+#    s_a_index=bitarray2dec(ibits)
+#    for f in range(0,f_delta):
+#        for i in range(0,r_.shape[0]):
+#            off_=np.exp(-1j*2*np.pi*f/f_delta*T*i)
+#            p[f,j]+=symbols[i]*r_[i,j]*H[j,s_a_index[i]]*off_
+#    f_o[j]=np.argmax(np.abs(p[:,j]))/f_delta
+#print(f_o)
 #r_of=receiver_.channel()
 #f_est=np.zeros([RA,SA])
 #for j in range(0,SA):
