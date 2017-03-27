@@ -36,24 +36,25 @@ Nd=int(np.log2(M))
 filter_=rrcfilter(8*1+1,1 , 1, 0)
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
 # besser mit rho=1
-H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1/np.sqrt(2)*(np.random.randn(RA,SA)))
+H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
+H=np.abs(H)
 # Channel matrix
 #H=np.ones([RA,SA])  
 
 sender_=sender(N,Ni,Nd,bpsk_map,filter_)
 #tx
 s=sender_.bbsignal()
-
-r_off=sender_.bbsignal()*np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
+r_off=s
+#r_off=sender_.bbsignal()*np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
 #with frequency offset
 receiver_=receiver(H,sender_,r_off,SNR_noise_dB,SNR_RA_dB,filter_,bpsk_map)
-r_of=receiver_.channel()
-f_est=np.zeros([RA,SA])
-for j in range(0,SA):
-    for i in range(0,RA):
-        f_est[i,j]=ML_approx(H[i,:],filter_,r_of[:,i],T,sender_.symbols)
-print(f_est)
-
+#r_of=receiver_.channel()
+#f_est=np.zeros([RA,SA])
+#for j in range(0,SA):
+#    for i in range(0,RA):
+#        f_est[i,j]=ML_approx(H[i,:],filter_,r_of[:,i],T,sender_.symbols)
+#print(f_est)
+##nicht korrekt
 
 
 
@@ -165,5 +166,5 @@ print(f_est)
 ##rx
 #
 #
-#BERi,BERd=receiver_.BER()
+BERi,BERd=receiver_.BER()
 

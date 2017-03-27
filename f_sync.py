@@ -10,20 +10,22 @@ import numpy as np
 
 #data-aided ML Approximation (Voraussetzung:f_off<<1/T)
 def ML_approx(h,filter_,r,T,symbols):
+    f_delta=100
     group_delay = (filter_.ir().size - 1) // 2
     r_=np.zeros((len(r)-filter_.ir().size+1),complex)
-    p=np.zeros([1000,h.size])
+    p=np.zeros([f_delta,h.size])
     for j in range(0,h.size):
         a= np.convolve(h[j]*filter_.ir(), r)
         r_= a[ 2*group_delay: - 2*group_delay]
         r_mf = r_[::filter_.n_up]
-        for f in range(0,1000):
+        for f in range(0,f_delta):
             for i in range(0,r_mf.size):
-                p[f,j]=symbols[i]*r_mf[i]*np.exp(-1j*2*np.pi*f/1000*i*T/filter_.n_up)
+                p[f,j]=symbols[i]*r_mf[i]*np.exp(-1j*2*np.pi*f/f_delta*i*T/filter_.n_up)
                 q=np.abs(p)
-                f_o=np.argmax(q[:,j])/1000
+                f_o=np.argmax(q[:,j])/f_delta
     return f_o
 
+#non data-aided
 def FLL(r,g_mf):
     k = np.arange(np.ceil(-len(g_mf)/2),np.floor(len(g_mf)/2)+1)
     T=1
