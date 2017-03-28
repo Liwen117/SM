@@ -13,7 +13,7 @@ from receiver_class import receiver
 import f_sync as fr
 from f_sync import ML_approx
 #def sm(SNR_noise_dB,SNR_RA_dB,f_off):
-SNR_noise_dB=100
+SNR_noise_dB=30
 SNR_RA_dB=0
 SA=4
 #number of sender antennas
@@ -27,14 +27,15 @@ N=500
 #number of symbols
 T=0.01
 #symbol duration
-f_off=0.46
+f_off=0.51
 #number of training symbols
 Ni=int(np.log2(SA))
 #number of Index bits per symbol
 Nd=int(np.log2(M))
 #number of Data bits per symbol
-filter_=rrcfilter(8*2+1,2 , 1, 0)
+filter_=rrcfilter(8*1+1,1 , 1,0)
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
+#???? BER fuer Index verschlechtet sich bei Uebungabtastung
 # besser mit rho=1
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
 H=np.abs(H)
@@ -46,13 +47,23 @@ sender_=sender(N,Ni,Nd,bpsk_map,filter_)
 s=sender_.bbsignal()
 #r_off=s
 
-#with frequency offset
+#training symbols(/bits) which may be shared with receiver, when a data-aided method is used
 symbols=sender_.symbols
 ibits=sender_.ibits
+
+
 receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,bpsk_map)
+#BERi,BERd=receiver_.BER()
+
+#with frequency offset
 off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
 r=receiver_.channel()*np.repeat(off,8).reshape([-1,8])
+#Frequency offset estimation with ML-Approximation(data-aided)
 f_of=ML_approx(filter_,r,T,symbols,ibits,H)
+
+
+
+
 print(f_of)
 
 #f_delta=100
@@ -190,5 +201,5 @@ print(f_of)
 ##rx
 #
 #
-BERi,BERd=receiver_.BER()
+
 
