@@ -5,7 +5,7 @@ Created on Wed Mar 15 14:25:31 2017
 
 @author: Liwen 
 """
-from commpy.utilities import dec2bitarray,bitarray2dec 
+
 import numpy as np  
 from rrc import rrcfilter
 from sender_class import sender
@@ -65,48 +65,6 @@ f_of=ML_approx(filter_,r,T,symbols,ibits,H)
 
 
 print(f_of)
-
-#f_delta=100
-#group_delay = (filter_.ir().size - 1) // 2
-#p=np.zeros([f_delta,H.shape[0]],complex)
-#f_o=np.zeros(H.shape[0])
-#r_up=np.zeros([r.shape[0]-filter_.ir().size+1,H.shape[0]],complex)
-#r_=np.zeros([symbols.size,H.shape[0]])
-#for j in range(0,H.shape[0]):
-#    a= np.convolve(filter_.ir(), r[:,j])
-#    r_up[:,j]= a[ 2*group_delay: - 2*group_delay]
-#    r_[:,j] = r_up[::filter_.n_up,j]
-#    s_a_index=bitarray2dec(ibits)
-#    for f in range(0,f_delta):
-#        for i in range(0,r_.shape[0]):
-#            off_=np.exp(-1j*2*np.pi*f/f_delta*T*i)
-#            p[f,j]+=symbols[i]*r_[i,j]*H[j,s_a_index[i]]*off_
-#    f_o[j]=np.argmax(np.abs(p[:,j]))/f_delta
-#print(f_o)
-#r_of=receiver_.channel()
-#f_est=np.zeros([RA,SA])
-#for j in range(0,SA):
-#    for i in range(0,RA):
-#        f_est[i,j]=ML_approx(H[i,:],filter_,r_of[:,i],T,sender_.symbols)
-#print(f_est)
-##nicht korrekt
-
-
-
-
-#group_delay = (filter_.ir().size - 1) // 2
-#r_=np.zeros((len(r)-filter_.ir().size+1),complex)
-#a= np.convolve(filter_.ir(), r)
-#r_= a[ 2*group_delay: - 2*group_delay]
-#r_mf = r_[::filter_.n_up]
-#p=np.zeros(1000)
-#for f in range(0,1000):
-#    for i in range(0,r_mf.size):
-#        p[f]=sender_.symbols[i]*r_mf[i]*np.exp(-1j*2*np.pi*f/1000*i*T/filter_.n_up)
-#q=np.abs(p)
-#f_o=np.argmax(q)/1000
-
-
 
 
 #g_mf=filter_.ir()

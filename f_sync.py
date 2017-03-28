@@ -9,6 +9,7 @@ import numpy as np
 from commpy.utilities import bitarray2dec 
 
 #data-aided ML Approximation (Voraussetzung:f_off<<1/T)
+#zuverbessern!!! jetzt wird nur von f:0~1Hz geschaetzt
 def ML_approx(filter_,r,T,symbols,ibits,H):
     f_delta=100
     group_delay = (filter_.ir().size - 1) // 2
@@ -27,6 +28,8 @@ def ML_approx(filter_,r,T,symbols,ibits,H):
                 p[f,j]+=symbols[i]*r_[i,j]*H[j,s_a_index[i]]*off_
         f_o[j]=np.argmax(np.abs(p[:,j]))/f_delta
     print(f_o)
+    
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #non data-aided
 def FLL(r,g_mf):
