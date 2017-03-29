@@ -115,6 +115,8 @@ class receiver():
             yi[i],yd[i]=np.unravel_index(np.argmin(g[:,:,i]), (n,self.mapp.size))
         self.yi=yi
         self.yd=yd
+        self.g=g
+
     
     
     def BER(self):

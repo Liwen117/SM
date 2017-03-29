@@ -8,8 +8,8 @@ Created on Fri Mar 24 17:18:38 2017
 import numpy as np
 from commpy.utilities import bitarray2dec 
 
-#data-aided ML Approximation (Voraussetzung:f_off<<1/T)
-def ML_approx(filter_,r_,T,symbols,ibits,H):
+#data-aided ML Approximation with known channel(Voraussetzung:f_off<<1/T)
+def ML_approx_known(r_,T,symbols,ibits,H):
     f_delta=2
     f_range=100
     interp_fact=10
@@ -28,114 +28,83 @@ def ML_approx(filter_,r_,T,symbols,ibits,H):
     return f_o
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-2
+
 #non data-aided, MPSK
 
-def NDA(r,M,T,H):
-    
-    summ=np.zeros([r.shape[1],H.shape[1]],complex)
-    f_off=np.zeros([r.shape[1],H.shape[1]])
-    for j in range(0,H.shape[1]):
-        for i in range(0,r.shape[1]):
-            for n in range(1,r.shape[0]):
-                summ[i,j] += (r[n,i]*H[i,j]*np.conj(r[n-1,i]*H[i,j]))**M
-                f_off[i,j]=1/(2*np.pi*T*M)*(np.angle(summ[i,j]))
+#def NDA(r,M,T):
+#    summ=np.zeros(r.shape[1],complex)
+#    f_off=np.zeros(r.shape[1])
+#    for j in range(0,r.shape[1]):
+#        for i in range(1,r.shape[0]):
+#            summ[j] += (r[i,j]*np.conj(r[i-1,j]))**M
+#            f_off[j]=1/(2*np.pi*T*M)*(np.angle(summ[j]))
+#    return f_off
+
+def NDA(r,M,T,H): 
+    summ=np.zeros([r.shape[1],H.shape[1],H.shape[1]],complex)
+    f_off=np.zeros([r.shape[1],H.shape[1],H.shape[1]])
+    for j1 in range(0,H.shape[1]):
+       for j2 in range(0,H.shape[1]):
+           for i in range(0,r.shape[1]):
+               for n in range(1,r.shape[0]):
+                   summ[i,j1,j2] += (r[n,i]*H[i,j1]*np.conj(r[n-1,i]*H[i,j2]))**M
+                   f_off[i,j1,j2]=1/(2*np.pi*T*M)*(np.angle(summ[i,j1,j2]))
     return f_off
-
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-def FLL(r,g_mf):
-    k = np.arange(np.ceil(-len(g_mf)/2),np.floor(len(g_mf)/2)+1)
-    T=1
-    g_dmf= 2*np.pi*T*k[:]*g_mf[:]
-    # Ausgabe initialisieren
-    x_out = np.zeros([len(r)/4,1],complex)
-    f = 0
-    #
-    #Schrittweite
-    gamma = 0.01
+#data-aided ML with channel unknown
+def ML_unknown(y,T,symbols,ibits):
+    f_delta=1
+    f_range=100
+    interp_fact=100
+    R=np.zeros(y.shape[0],complex)
+    X=np.zeros(int(f_range/f_delta),complex)
     
-    # temp. Variable: Speicherinhalt x-Zweig
-    #persistent x_buf
-    #if isempty(x_buf)
-    x_buf = np.zeros([len(g_mf)-1,1],complex);
-    #end
-    #
-    #persistent x_1
-    #if isempty(x_1)
-    x_1 = complex(0);
-    #end
-    #
-    #% temp. Variable: Speicherinhalt y-Zweig
-    #persistent y_buf
-    #if isempty(y_buf)
-    y_buf = np.zeros([len(g_dmf)-1,1],complex);
-    #end
-    #
-    #persistent y_1
-    #if isempty(y_1)
-    y_1 = complex(0);
-    #end
-    #
-    #% Frequenz
-    #persistent nu
-    #if isempty(nu)
-    nu = 0;
-    #end
-    #
-    #% Phaseninkrement
-    #persistent phi
-    #if isempty(phi)
-    phi = 0;
-    #end
-    #
-    #% temp. Zaehlervariable
-    cnt=1;
-    #
+    N=1/np.sum(symbols**2)
+    index=bitarray2dec(ibits)
+    xvals = np.linspace(0, f_range, f_range/f_delta*interp_fact)
+    x = np.linspace(0, int(f_range/f_delta),int(f_range/f_delta))
+    for f in range(0,int(f_range/f_delta)):
+        for m in range(1,y.shape[0]):
+            for k in range(m,y.shape[0]):
+                if index[k]==index[k-m]:
+                    R[m]+= np.dot(np.conj(y[k-m,:]),y[k,:])*symbols[k]*symbols[k-m]*N
+            X[f] +=R[m]*np.exp(-1j*2*np.pi*m*f*f_delta*T)
+        R[m]=0
+    f_est=np.argmax(np.interp(xvals,x,np.real(X)))*f_delta**2/interp_fact
+    return f_est
+            
+
+            
+
+
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    #% Phasenkorrektur
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    #
-    for ii in range(0,len(r)+1):
-    #    
-    #    % Korrektur des Eingangswertes
-        r[ii] = r[ii] * np.exp(1j*(-phi))
-    #    
-    #    % neues Phaseninkrement berechnen
-        phi = phi + 2*np.pi*nu/8000
-    #    
-    #    % Filteroperationen, MF+DMF
-        x=np.convolve(g_mf,r[ii])[:r[ii].size]
-        y=np.convolve(g_dmf,r[ii])[:r[ii].size]
-        
-    #    
-    #      
-    #    % Downsample by 8
-        if (np.mod(ii,8) == 1):
-    #        
-    #        % Fehler berechnen
-            e = 0.5*np.imag(x_1*np.conj(y_1)) + 0.5*np.imag(x*np.conj(y)); 
-    #        
-    #        % Frequenzoffset berechnen
-            nu= nu + gamma*e;     
-    #        
-    #        % nur zur Visualisierung
-            f=f+nu;
-    #    end
-    #    
-    #    % Downsample by 4
-        if (np.mod(ii,4) == 1):
-    #        
-            x_1 = x;
-            y_1 = y;
-    #        
-    #        % Ausgabe, Faktor 2 ueberabgetastet!
-            x_out[cnt] = x;
-            cnt=cnt+1;
-    #    end    
-    #   
-    #end
-    #
-    #% nur zur Visualisierung
-    print(f/len(r)*8)
-    return x_out
+#data-aided ML Approximation with channel unknown
+def ML_approx_unknown(y,T,symbols,ibits):
+    f_delta=5
+    f_range=100
+    interp_fact=10
+    R=np.zeros(y.shape[0],complex)
+    X=np.zeros(int(f_range/f_delta),complex)
+    
+    N=1/np.sum(symbols**2)
+    index=bitarray2dec(ibits)
+    xvals = np.linspace(0, f_range, f_range/f_delta*interp_fact)
+    x = np.linspace(0, int(f_range/f_delta),int(f_range/f_delta))
+    for f in range(0,int(f_range/f_delta)):
+        for m in range(1,y.shape[0]):
+            for k in range(m,y.shape[0]):
+                if index[k]==index[k-m]:
+                    R[m]+= np.dot(np.conj(y[k-m,:]),y[k,:])*symbols[k]*symbols[k-m]*N
+            X[f] +=R[m]*np.exp(-1j*2*np.pi*m*f*f_delta*T)
+        R[m]=0
+    f_est=np.argmax(np.interp(xvals,x,np.real(X)))*f_delta**2/interp_fact
+    return f_est
+            
+
+
+
+
+
+
+
+
