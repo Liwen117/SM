@@ -24,6 +24,11 @@ class receiver():
         self.MF_ir=filter_.ir()
         self.sps=filter_.n_up
         self.mapp=mapp
+        self.channel()
+        self.rr=self.Matched_Filter(self.r.real)
+        self.ri=self.Matched_Filter(self.r.imag)
+        self.r_mf=self.rr+1j*self.ri
+        self.detector(self.r_mf)
       
 #index fuer group delay waehlen, zusammen nach MF loeschen         
     def channel(self):
@@ -113,10 +118,7 @@ class receiver():
     
     
     def BER(self):
-        self.channel()
-        self.rr=self.Matched_Filter(self.r.real)
-        self.ri=self.Matched_Filter(self.r.imag)
-        self.detector(self.rr+1j*self.ri)
+
         xi=np.zeros((self.yi.size,self.Ni))
         xd=np.zeros((self.yd.size,self.Nd))
         for i in range(0,self.yi.size):

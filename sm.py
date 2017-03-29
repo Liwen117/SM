@@ -21,13 +21,13 @@ RA=8
 #number of receiver antennas
 M=2
 #data bits modulation order (BPSK)
-bpsk_map=np.array([1,-1])
-#qpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-N=500
+mpsk_map=np.array([1,-1])
+#mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
+N=5000
 #number of symbols
-T=0.01
+T=1*1e-4
 #symbol duration
-f_off=0.51
+f_off=15
 #number of training symbols
 Ni=int(np.log2(SA))
 #number of Index bits per symbol
@@ -42,7 +42,7 @@ H=np.abs(H)
 # Channel matrix
 #H=np.ones([RA,SA])  
 
-sender_=sender(N,Ni,Nd,bpsk_map,filter_)
+sender_=sender(N,Ni,Nd,mpsk_map,filter_)
 #tx
 s=sender_.bbsignal()
 #r_off=s
@@ -52,16 +52,23 @@ symbols=sender_.symbols
 ibits=sender_.ibits
 
 
-receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,bpsk_map)
+receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,mpsk_map)
 #BERi,BERd=receiver_.BER()
 
 #with frequency offset
 off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
 r=receiver_.channel()*np.repeat(off,8).reshape([-1,8])
+
 #Frequency offset estimation with ML-Approximation(data-aided)
 f_of=ML_approx(filter_,r,T,symbols,ibits,H)
 
-
+#Frequency offset estimation with Non-Data-Aided method based on MPSK
+#summ=np.zeros(RA,complex)
+#f_of=np.zeros(RA)
+#for j in range(0,r.shape[1]):
+#    for i in range(1,r.shape[0]):
+#        summ[j] += (r[i,j]*np.conj(r[i-1,j]))**M
+#    f_of[j]=1/(2*np.pi*T*M)*(np.angle(summ[j]))
 
 
 print(f_of)

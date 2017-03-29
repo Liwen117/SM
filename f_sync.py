@@ -11,9 +11,10 @@ from commpy.utilities import bitarray2dec
 #data-aided ML Approximation (Voraussetzung:f_off<<1/T)
 #zuverbessern!!! jetzt wird nur von f:0~1Hz geschaetzt
 def ML_approx(filter_,r,T,symbols,ibits,H):
-    f_delta=100
+    f_delta=1
+    f_range=100
     group_delay = (filter_.ir().size - 1) // 2
-    p=np.zeros([f_delta,H.shape[0]],complex)
+    p=np.zeros([f_delta*f_range,H.shape[0]],complex)
     f_o=np.zeros(H.shape[0])
     r_up=np.zeros([r.shape[0]-filter_.ir().size+1,H.shape[0]],complex)
     r_=np.zeros([symbols.size,H.shape[0]])
@@ -22,7 +23,7 @@ def ML_approx(filter_,r,T,symbols,ibits,H):
         r_up[:,j]= a[ 2*group_delay: - 2*group_delay]
         r_[:,j] = r_up[::filter_.n_up,j]
         s_a_index=bitarray2dec(ibits)
-        for f in range(0,f_delta):
+        for f in range(0,f_delta*f_range):
             for i in range(0,r_.shape[0]):
                 off_=np.exp(-1j*2*np.pi*f/f_delta*T*i)
                 p[f,j]+=symbols[i]*r_[i,j]*H[j,s_a_index[i]]*off_
