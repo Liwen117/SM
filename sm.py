@@ -11,7 +11,9 @@ from rrc import rrcfilter
 from sender_class import sender
 from receiver_class import receiver
 import f_sync as fr
-from f_sync import ML_approx
+from f_sync import ML_approx, NDA
+import time
+
 #def sm(SNR_noise_dB,SNR_RA_dB,f_off):
 SNR_noise_dB=30
 SNR_RA_dB=0
@@ -23,11 +25,11 @@ M=2
 #data bits modulation order (BPSK)
 mpsk_map=np.array([1,-1])
 #mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-N=5000
+N=200
 #number of symbols
-T=1*1e-4
+T=1*1e-3
 #symbol duration
-f_off=15
+f_off=16
 #number of training symbols
 Ni=int(np.log2(SA))
 #number of Index bits per symbol
@@ -38,7 +40,7 @@ filter_=rrcfilter(8*1+1,1 , 1,0)
 #???? BER fuer Index verschlechtet sich bei Uebungabtastung
 # besser mit rho=1
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
-H=np.abs(H)
+#H=np.abs(H)
 # Channel matrix
 #H=np.ones([RA,SA])  
 
@@ -58,20 +60,19 @@ receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,mpsk_map)
 #with frequency offset
 off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
 r=receiver_.channel()*np.repeat(off,8).reshape([-1,8])
+r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
 
+t1=time.clock()
 #Frequency offset estimation with ML-Approximation(data-aided)
-f_of=ML_approx(filter_,r,T,symbols,ibits,H)
+#f_of=ML_approx(filter_,r_mf,T,symbols,ibits,H)
 
 #Frequency offset estimation with Non-Data-Aided method based on MPSK
-#summ=np.zeros(RA,complex)
-#f_of=np.zeros(RA)
-#for j in range(0,r.shape[1]):
-#    for i in range(1,r.shape[0]):
-#        summ[j] += (r[i,j]*np.conj(r[i-1,j]))**M
-#    f_of[j]=1/(2*np.pi*T*M)*(np.angle(summ[j]))
+f_of=NDA(r_mf,M,T,H)
 
+t=time.clock()-t1
+print(f_of,t)
 
-print(f_of)
+#print(np.average(f_of))
 
 
 #g_mf=filter_.ir()

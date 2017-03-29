@@ -9,30 +9,41 @@ import numpy as np
 from commpy.utilities import bitarray2dec 
 
 #data-aided ML Approximation (Voraussetzung:f_off<<1/T)
-#zuverbessern!!! jetzt wird nur von f:0~1Hz geschaetzt
-def ML_approx(filter_,r,T,symbols,ibits,H):
-    f_delta=1
+def ML_approx(filter_,r_,T,symbols,ibits,H):
+    f_delta=2
     f_range=100
-    group_delay = (filter_.ir().size - 1) // 2
-    p=np.zeros([f_delta*f_range,H.shape[0]],complex)
+    interp_fact=10
+    p=np.zeros([int(f_range/f_delta),H.shape[0]],complex)
     f_o=np.zeros(H.shape[0])
-    r_up=np.zeros([r.shape[0]-filter_.ir().size+1,H.shape[0]],complex)
-    r_=np.zeros([symbols.size,H.shape[0]])
+    xvals = np.linspace(0, f_range, f_range/f_delta*interp_fact)
+    x = np.linspace(0, int(f_range/f_delta),int(f_range/f_delta))
     for j in range(0,H.shape[0]):
-        a= np.convolve(filter_.ir(), r[:,j])
-        r_up[:,j]= a[ 2*group_delay: - 2*group_delay]
-        r_[:,j] = r_up[::filter_.n_up,j]
         s_a_index=bitarray2dec(ibits)
-        for f in range(0,f_delta*f_range):
+        for f in range(0,int(f_range/f_delta)):
             for i in range(0,r_.shape[0]):
-                off_=np.exp(-1j*2*np.pi*f/f_delta*T*i)
+                off_=np.exp(-1j*2*np.pi*f*f_delta*T*i)
                 p[f,j]+=symbols[i]*r_[i,j]*H[j,s_a_index[i]]*off_
-        f_o[j]=np.argmax(np.abs(p[:,j]))/f_delta
-    print(f_o)
+        #with Interpolation            
+        f_o[j]=np.argmax(np.interp(xvals,x,np.abs(p[:,j])))*f_delta**2/interp_fact
+    return f_o
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+2
+#non data-aided, MPSK
 
-#non data-aided
+def NDA(r,M,T,H):
+    
+    summ=np.zeros([r.shape[1],H.shape[1]],complex)
+    f_off=np.zeros([r.shape[1],H.shape[1]])
+    for j in range(0,H.shape[1]):
+        for i in range(0,r.shape[1]):
+            for n in range(1,r.shape[0]):
+                summ[i,j] += (r[n,i]*H[i,j]*np.conj(r[n-1,i]*H[i,j]))**M
+                f_off[i,j]=1/(2*np.pi*T*M)*(np.angle(summ[i,j]))
+    return f_off
+
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 def FLL(r,g_mf):
     k = np.arange(np.ceil(-len(g_mf)/2),np.floor(len(g_mf)/2)+1)
     T=1
