@@ -36,6 +36,11 @@ class sender():
         s = np.zeros(symbs.size*self.sps+self.ir.size-1)
         for i in range(symbs.size):
             s[i*self.sps:i*self.sps+self.ir.size]+=symbs[i]*self.ir
+         #??? which one is right???
+#         symbols_up = np.zeros(N * sps)
+#         symbols_up[::sps] = symbols
+#         tx_signal = np.convolve(g, symbols_up)
+            
         return s
 #        symbols_up = np.repeat(symbs,self.sps)
 #        return np.convolve(self.ir, symbols_up)

@@ -25,11 +25,13 @@ M=2
 #data bits modulation order (BPSK)
 mpsk_map=np.array([1,-1])
 #mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-N=100
+N=30
 #number of symbols
 T=1*1e-5
 #symbol duration
-f_off=66
+f_off=51
+n_off=0
+phi_off=0
 #number of training symbols
 Ni=int(np.log2(SA))
 #number of Index bits per symbol
@@ -63,6 +65,50 @@ BERi,BERd=receiver_.BER()
 off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
 r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
 r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+r_mf=r_mf[n_off:]*np.exp(1j*2*np.pi*phi_off)
+
+
+
+
+#sps=filter_.n_up
+##r_sync=np.zeros([r_mf.shape[0],r_mf.shape[1]-1])
+#def rint(x):
+#    return np.int(np.round(x))
+#
+#class gardner_timing_recovery:
+#    e = [0]
+#    gamma = 1e-1
+#    tau = [0, 0]
+#    output_symbols = []
+#    
+#    def run(self, y):
+#        for k in range(y.size//sps - 1):
+#            self.output_symbols.append(y[k*sps + rint(self.tau[k])])
+#            if k > 0:
+#                self.e.append(self.TED(y, k))  # update error signal
+#                self.tau.append(self.loop_filter(k))
+#    
+#    def TED(self, y, k):
+#        return (y[(k-1)*sps + self.rint(self.tau[k-1])] - y[k*sps + rint(self.tau[k])]) * y[k * sps - sps//2 + rint(self.tau[k-1])]
+#    
+#    def loop_filter(self, k):
+#        return self.tau[k] + self.gamma * self.e[k]
+#    
+#    def rint(self, x):
+#        return int(round(x))
+##
+#timing_sync = gardner_timing_recovery()
+#timing_sync.run(r_mf[:,1])
+#r_sync = timing_sync.output_symbols
+#    #timing_sync.run(r[i,:])
+#    #r_sync[i,:] = timing_sync.output_symbols
+    
+
+
+
+
+
+
 
 #t1=time.clock()
 #Frequency offset estimation with ML-Approximation(data-aided) with known channel
@@ -79,6 +125,7 @@ f_est=ML_approx_unknown(r_mf,T,symbols,ibits)
 #f_of=NDA(r_mf,M,T,H)
 #r_of= np.repeat(r_mf,H.shape[1]).reshape([N,RA,SA])
 #t=time.clock()-t1
+
 
 
 
