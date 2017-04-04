@@ -1,6 +1,6 @@
 import numpy as np
        
-
+import scipy.linalg as lin
 ########################
 # find impulse response of an RRC filter
 
@@ -43,7 +43,7 @@ class rrcfilter:
                     rrc[i] = self.beta/np.sqrt(2.0*self.t_symb)*((1+2/np.pi)*np.sin(np.pi/4.0/self.beta)+(1.0-2.0/np.pi)*np.cos(np.pi/4.0/self.beta))
                 else:
                     rrc[i] = 1.0/np.sqrt(self.t_symb)*(np.sin(np.pi*t_steps[i]/self.t_symb*(1-self.beta))+4.0*self.beta*t_steps[i]/self.t_symb*np.cos(np.pi*t_steps[i]/self.t_symb*(1+self.beta)))/(np.pi*t_steps[i]/self.t_symb*(1.0-(4.0*self.beta*t_steps[i]/self.t_symb)**2.0))
-     
+        rrc /= lin.norm(rrc) 
         return rrc
         
     

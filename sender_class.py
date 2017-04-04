@@ -32,14 +32,16 @@ class sender():
         indices=bitarray2dec(self.dbits) 
         self.symbols=self.mapp[indices]
     
-    def databits_pulseforming(self,symbs):
-        s = np.zeros(symbs.size*self.sps+self.ir.size-1)
-        for i in range(symbs.size):
-            s[i*self.sps:i*self.sps+self.ir.size]+=symbs[i]*self.ir
+    def databits_pulseforming(self,symbols):
+        #repeat value
+#        s = np.zeros(symbols.size*self.sps+self.ir.size-1)
+#        for i in range(symbols.size):
+#            s[i*self.sps:i*self.sps+self.ir.size]+=symbols[i]*self.ir
          #??? which one is right???
-#         symbols_up = np.zeros(N * sps)
-#         symbols_up[::sps] = symbols
-#         tx_signal = np.convolve(g, symbols_up)
+         #zero-padding
+        symbols_up = np.zeros(symbols.size * self.sps)
+        symbols_up[::self.sps] = symbols
+        s = np.convolve(self.ir, symbols_up)
             
         return s
 #        symbols_up = np.repeat(symbs,self.sps)

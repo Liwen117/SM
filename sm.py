@@ -14,22 +14,23 @@ import f_sync as fr
 from f_sync import ML_approx_known, NDA, ML_unknown, ML_approx_unknown
 import time
 from commpy.utilities import bitarray2dec 
+import matplotlib.pyplot as plt  # plotting library
 #def sm(SNR_noise_dB,SNR_RA_dB,f_off):
 SNR_noise_dB=50
 SNR_RA_dB=0
 SA=4
 #number of sender antennas
-RA=16
+RA=4
 #number of receiver antennas
 M=2
 #data bits modulation order (BPSK)
 mpsk_map=np.array([1,-1])
 #mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-N=30
+N=50
 #number of symbols
-T=1*1e-5
+T=1*1e-4
 #symbol duration
-f_off=51
+f_off=24.7
 n_off=0
 phi_off=0
 #number of training symbols
@@ -37,14 +38,15 @@ Ni=int(np.log2(SA))
 #number of Index bits per symbol
 Nd=int(np.log2(M))
 #number of Data bits per symbol
-filter_=rrcfilter(8*1+1,1 , 1,0)
+n_up=1
+filter_=rrcfilter(8*n_up+1,n_up , 1,0)
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
 #???? BER fuer Index verschlechtet sich bei Uebungabtastung
 # besser mit rho=1
-H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
+#H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
 #H=np.abs(H)
 #Channel matrix
-#H=np.ones([RA,SA])  
+H=np.ones([RA,SA])
 
 sender_=sender(N,Ni,Nd,mpsk_map,filter_)
 #tx
@@ -59,50 +61,35 @@ ibits=sender_.ibits
 receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,mpsk_map)
 r=receiver_.channel()
 r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-BERi,BERd=receiver_.BER()
+#BERi,BERd=receiver_.BER()
 
 #with frequency offset
 off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
 r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
 r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-r_mf=r_mf[n_off:]*np.exp(1j*2*np.pi*phi_off)
+r_mf=r_mf*np.exp(1j*2*np.pi*phi_off)
+#r_mf=np.concatenate((r_m[n_off:],r_m[:n_off]))
 
 
+#n_range=10
+#L=np.zeros(n_range)
+##when n=0 function doesn't work
+#for n in range(1,n_range):
+#    r=r_mf[:-n]
+#    symbs=symbols[n:]
+#    index=bitarray2dec(ibits[:,n:])
+#    f_est=ML_approx_unknown(r,T,symbs,ibits[:,n:])
+#    H_est=np.zeros([RA,SA],complex)  
+#    for k in range(n,symbs.size):
+#        H_est[:,index[k]]+= r_mf[k,:]*symbs[k]*np.exp(-1j*2*np.pi*T*k*f_est)/np.sum(symbs**2)    
+#    #Likelihood function for Timing estimation
+#        L[n]+=np.linalg.norm(r[k,:]-H_est[:,index[k]]*np.exp(1j*2*np.pi*T*(k-n)*symbs[k-n]))**2
+#n_est=np.argmax(L)
+##    
 
-
-#sps=filter_.n_up
-##r_sync=np.zeros([r_mf.shape[0],r_mf.shape[1]-1])
-#def rint(x):
-#    return np.int(np.round(x))
-#
-#class gardner_timing_recovery:
-#    e = [0]
-#    gamma = 1e-1
-#    tau = [0, 0]
-#    output_symbols = []
-#    
-#    def run(self, y):
-#        for k in range(y.size//sps - 1):
-#            self.output_symbols.append(y[k*sps + rint(self.tau[k])])
-#            if k > 0:
-#                self.e.append(self.TED(y, k))  # update error signal
-#                self.tau.append(self.loop_filter(k))
-#    
-#    def TED(self, y, k):
-#        return (y[(k-1)*sps + self.rint(self.tau[k-1])] - y[k*sps + rint(self.tau[k])]) * y[k * sps - sps//2 + rint(self.tau[k-1])]
-#    
-#    def loop_filter(self, k):
-#        return self.tau[k] + self.gamma * self.e[k]
-#    
-#    def rint(self, x):
-#        return int(round(x))
-##
-#timing_sync = gardner_timing_recovery()
-#timing_sync.run(r_mf[:,1])
-#r_sync = timing_sync.output_symbols
-#    #timing_sync.run(r[i,:])
-#    #r_sync[i,:] = timing_sync.output_symbols
-    
+#n=n_off
+#f_est=ML_approx_unknown(r_mf[:-n],T,symbols[n:],ibits[:,n:])  
+#sy=symbols[n:]
 
 
 
@@ -119,7 +106,14 @@ r_mf=r_mf[n_off:]*np.exp(1j*2*np.pi*phi_off)
 
 #ML_approx with channel unknown
 f_est=ML_approx_unknown(r_mf,T,symbols,ibits)
-
+#TEST for CS
+H_est=np.zeros([RA,SA],complex)  
+index=bitarray2dec(ibits)
+for k in range(0,symbols.size):
+    H_est[:,index[k]]+= r_mf[k,index[k]]*symbols[k]*np.exp(-1j*2*np.pi*T*f_est*k)
+H_est=H_est/np.sum(symbols**2)    
+Hd=H-H_est
+##
 
 ##Frequency offset estimation with Non-Data-Aided method based on MPSK
 #f_of=NDA(r_mf,M,T,H)
