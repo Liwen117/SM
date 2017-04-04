@@ -80,24 +80,23 @@ def ML_unknown(y,T,symbols,ibits):
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #data-aided ML Approximation with channel unknown
 def ML_approx_unknown(y,T,symbols,ibits):
-    f_delta=5
-    f_range=100
-    interp_fact=10
+
     R=np.zeros(y.shape[0],complex)
-    X=np.zeros(int(f_range/f_delta),complex)
-    
+
+    X_1=0
+    X_2=0
     N=1/np.sum(symbols**2)
     index=bitarray2dec(ibits)
-    xvals = np.linspace(0, f_range, f_range/f_delta*interp_fact)
-    x = np.linspace(0, int(f_range/f_delta),int(f_range/f_delta))
-    for f in range(0,int(f_range/f_delta)):
-        for m in range(1,y.shape[0]):
-            for k in range(m,y.shape[0]):
-                if index[k]==index[k-m]:
-                    R[m]+= np.dot(np.conj(y[k-m,:]),y[k,:])*symbols[k]*symbols[k-m]*N
-            X[f] +=R[m]*np.exp(-1j*2*np.pi*m*f*f_delta*T)
-        R[m]=0
-    f_est=np.argmax(np.interp(xvals,x,np.real(X)))*f_delta**2/interp_fact
+    
+    for m in range(1,y.shape[0]):
+        for k in range(m,y.shape[0]):
+            if index[k]==index[k-m]:
+                R[m]+=np.dot(np.conj(y[k-m,:]),y[k,:])*symbols[k]*symbols[k-m]*N
+        X_1 +=m*np.abs(R[m])*np.angle(R[m])
+        X_2 +=m**2*np.abs(R[m])
+    
+    f_est=1/(2*np.pi*T)*X_1/X_2
+
     return f_est
             
 

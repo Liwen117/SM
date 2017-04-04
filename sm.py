@@ -11,11 +11,11 @@ from rrc import rrcfilter
 from sender_class import sender
 from receiver_class import receiver
 import f_sync as fr
-from f_sync import ML_approx_known, NDA, ML_unknown
+from f_sync import ML_approx_known, NDA, ML_unknown, ML_approx_unknown
 import time
 from commpy.utilities import bitarray2dec 
 #def sm(SNR_noise_dB,SNR_RA_dB,f_off):
-SNR_noise_dB=6
+SNR_noise_dB=50
 SNR_RA_dB=0
 SA=4
 #number of sender antennas
@@ -25,11 +25,11 @@ M=2
 #data bits modulation order (BPSK)
 mpsk_map=np.array([1,-1])
 #mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-N=200
+N=100
 #number of symbols
-T=1*1e-3
+T=1*1e-5
 #symbol duration
-f_off=48
+f_off=66
 #number of training symbols
 Ni=int(np.log2(SA))
 #number of Index bits per symbol
@@ -68,16 +68,17 @@ r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
 #Frequency offset estimation with ML-Approximation(data-aided) with known channel
 #f_est=ML_approx1(r_mf,T,symbols,ibits,H)
 
+#ML with channel unknown
+#f_est=ML_unknown(r_mf,T,symbols,ibits)
+
 #ML_approx with channel unknown
-f_est=ML_unknown(r_mf,T,symbols,ibits)
+f_est=ML_approx_unknown(r_mf,T,symbols,ibits)
+
 
 ##Frequency offset estimation with Non-Data-Aided method based on MPSK
 #f_of=NDA(r_mf,M,T,H)
 #r_of= np.repeat(r_mf,H.shape[1]).reshape([N,RA,SA])
 #t=time.clock()-t1
-
-
-
 
 
 
