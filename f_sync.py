@@ -55,7 +55,7 @@ def NDA(r,M,T,H):
 def ML_unknown(y,T,symbols,ibits):
     f_delta=1
     f_range=100
-    interp_fact=100
+    interp_fact=1
     R=np.zeros(y.shape[0],complex)
     X=np.zeros(int(f_range/f_delta),complex)
     
@@ -100,7 +100,7 @@ def ML_approx_unknown(y,T,symbols,ibits):
     return f_est
             
 
-
+#braucht ggf. Anpassung auf Anzahl der Benutzung von SA=> mit steigender N verschlechtet sich die Schätzung
 
 
 
