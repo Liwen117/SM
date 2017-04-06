@@ -20,17 +20,17 @@ SNR_noise_dB=50
 SNR_RA_dB=0
 SA=4
 #number of sender antennas
-RA=4
+RA=16
 #number of receiver antennas
 M=2
 #data bits modulation order (BPSK)
 mpsk_map=np.array([1,-1])
 #mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-N=50
+N=5
 #number of symbols
-T=1*1e-4
+T=1*1e-3
 #symbol duration
-f_off=24.7
+f_off=24
 n_off=0
 phi_off=0
 #number of training symbols
@@ -46,7 +46,7 @@ filter_=rrcfilter(8*n_up+1,n_up , 1,0)
 #H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
 #H=np.abs(H)
 #Channel matrix
-H=np.ones([RA,SA])
+H=np.ones([RA,SA])/4
 
 sender_=sender(N,Ni,Nd,mpsk_map,filter_)
 #tx
@@ -58,19 +58,32 @@ symbols=sender_.symbols
 ibits=sender_.ibits
 
 
-receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,mpsk_map)
-r=receiver_.channel()
-r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+#receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,mpsk_map)
+#r=receiver_.channel()
+#r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
 #BERi,BERd=receiver_.BER()
 
 #with frequency offset
-off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
-r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
-r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-r_mf=r_mf*np.exp(1j*2*np.pi*phi_off)
+#off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
+#r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
+#r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+#r_mf=r_mf*np.exp(1j*2*np.pi*phi_off)
 #r_mf=np.concatenate((r_m[n_off:],r_m[:n_off]))
 
 
+
+#without Filter
+off=np.exp(1j*2*np.pi*f_off*np.arange(symbols.size)*T)
+noise_variance_linear = 10**(-SNR_noise_dB / 10)
+s_a_index=np.repeat(bitarray2dec(ibits),n_up)
+r=np.zeros((symbols.size,H.shape[0]),complex)
+for j in range(0,H.shape[0]):
+    for i in range(0,s_a_index.size):
+        n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(symbols.size)+1j*np.random.randn(symbols.size) )
+        r[i,j]=np.sqrt(10**(SNR_RA_dB / 10))*symbols[i]*H[j,s_a_index[i]]
+        r[:,j]=r[:,j]
+        
+r=r*np.repeat(off,RA).reshape([-1,RA])
 #n_range=10
 #L=np.zeros(n_range)
 ##when n=0 function doesn't work
@@ -105,14 +118,15 @@ r_mf=r_mf*np.exp(1j*2*np.pi*phi_off)
 #f_est=ML_unknown(r_mf,T,symbols,ibits)
 
 #ML_approx with channel unknown
-f_est=ML_approx_unknown(r_mf,T,symbols,ibits)
+f_est=ML_approx_unknown(r,T,symbols,ibits)
 #TEST for CS
 H_est=np.zeros([RA,SA],complex)  
 index=bitarray2dec(ibits)
 for k in range(0,symbols.size):
-    H_est[:,index[k]]+= r_mf[k,index[k]]*symbols[k]*np.exp(-1j*2*np.pi*T*f_est*k)
+    H_est[:,index[k]]+= r[k,:]*symbols[k]*np.exp(-1j*2*np.pi*T*f_est*k)
 H_est=H_est/np.sum(symbols**2)    
 Hd=H-H_est
+#Anzahl soll auf Anzahl der Benutzung von jeder Sendeantenne angepasst werden!!!
 ##
 
 ##Frequency offset estimation with Non-Data-Aided method based on MPSK
