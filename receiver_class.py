@@ -12,8 +12,9 @@ import numpy as np
 from commpy.utilities import dec2bitarray,bitarray2dec
 
 class receiver():
-    def __init__(self,H,sender_,s_off,SNR_noise_dB,SNR_RA_dB,filter_,mapp):
+    def __init__(self,H,H_est,sender_,s_off,SNR_noise_dB,SNR_RA_dB,filter_,mapp):
         self.H=H
+        self.H_est=H_est
         self.ibits=sender_.ibits
         self.dbits=sender_.dbits
         self.Ni=sender_.Ni
@@ -115,7 +116,7 @@ class receiver():
                 #which sender
                 for q in range(0,self.mapp.size):
                     #which datasymbol
-                    g[j,q,i]=np.sqrt(10**(self.SNR_RA_dB / 10))*np.linalg.norm(self.H[:,j]*self.mapp[q])**2-2*np.real(r[i]@self.H[:,j]*self.mapp[q])
+                    g[j,q,i]=np.sqrt(10**(self.SNR_RA_dB / 10))*np.linalg.norm(self.H_est[:,j]*self.mapp[q])**2-2*np.real(r[i]@self.H_est[:,j]*self.mapp[q])
             yi[i],yd[i]=np.unravel_index(np.argmin(g[:,:,i]), (n,self.mapp.size))
         self.yi=yi
         self.yd=yd
@@ -123,17 +124,16 @@ class receiver():
 
     
     
-    def BER(self):
-
-        xi=np.zeros((self.yi.size,self.Ni))
-        xd=np.zeros((self.yd.size,self.Nd))
-        for i in range(0,self.yi.size):
-            xi[i]=dec2bitarray(int(self.yi[i]),self.Ni)
-        beri=np.sum(np.not_equal(xi.reshape((1,-1)),np.matrix(self.ibits).H.reshape((1,-1))))/xi.size 
-        for i in range(0,self.yd.size):
-            xd[i]=dec2bitarray(int(self.yd[i]),self.Nd)
-        berd=np.sum(np.not_equal(xd.reshape((1,-1)),np.matrix(self.dbits).H.reshape((1,-1))))/xd.size 
-        return beri, berd
+#def BER(self):
+#    xi=np.zeros((self.yi.size,self.Ni))
+#    xd=np.zeros((self.yd.size,self.Nd))
+#    for i in range(0,self.yi.size):
+#        xi[i]=dec2bitarray(int(self.yi[i]),self.Ni)
+#    beri=np.sum(np.not_equal(xi.reshape((1,-1)),np.matrix(self.ibits).H.reshape((1,-1))))/xi.size 
+#    for i in range(0,self.yd.size):
+#        xd[i]=dec2bitarray(int(self.yd[i]),self.Nd)
+#    berd=np.sum(np.not_equal(xd.reshape((1,-1)),np.matrix(self.dbits).H.reshape((1,-1))))/xd.size 
+#    return beri, berd
     #    def dmixer(r_BP,fc,fs):
 #        t = np.arange(len(r_BP)) / fs
 #        cos = np.sqrt(2) * np.cos(2 * np.pi * fc * t)
