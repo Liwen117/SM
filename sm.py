@@ -16,7 +16,7 @@ import time
 from commpy.utilities import bitarray2dec 
 import matplotlib.pyplot as plt  # plotting library
 #def sm(SNR_noise_dB,SNR_RA_dB,f_off):
-SNR_noise_dB=100
+SNR_noise_dB=50
 SNR_RA_dB=0
 SA=4
 #number of sender antennas
@@ -26,7 +26,7 @@ M=2
 #data bits modulation order (BPSK)
 mpsk_map=np.array([1,-1])
 #mpsk_map =1/np.sqrt(2) * np.array([1, 1j, -1j, -1], dtype=complex)
-N=20
+N=100
 #number of symbols
 T=1*1e-5
 #symbol duration
@@ -102,24 +102,18 @@ for n in range(1,n_range):
     f_estt=ML_approx_unknown(r,T,symbs,ibits[:,n:])
     H_est=np.zeros([RA,SA],complex)  
     i=np.zeros(SA)
-#    #Channel estimation
-#    for k in range(0,symbs.size):
-#        H_est[:,index[k]]+= r[k,:]/symbols[k]*np.exp(-1j*2*np.pi*T*f_estt*(k+n))
-#        i[index[k]]=i[index[k]]+1
-#    #Anzahl soll auf Anzahl der Benutzung von jeder Sendeantenne angepasst werden
-#    H_est=H_est/np.repeat(i,RA).reshape(-1,RA).transpose()
-#    H_diff=H-H_est
-    
-    H_est=H
-#    for k in range(n,symbs.size):
-#        H_est[:,index[k]]+= r[k,:]*symbols[k]*np.exp(-1j*2*np.pi*T*f_est*k)
-#        i[index[k]]=i[index[k]]+1
-#    H_est=H_est/np.repeat(i,RA).reshape(-1,RA).transpose()
-    #Likelihood function for Timing estimation       
+    #Channel estimation
+
     for k in range(0,symbs.size):
-        ss=H_est[:,index[k]]*np.exp(1j*2*np.pi*T*k)*symbs[k]
-        ssi=ss.imag
-        L[n-1]+=np.linalg.norm(r[k,:]-H_est[:,index[k]]*np.exp(1j*2*np.pi*T*k)*symbs[k])**2
+        H_est[:,index[k]]+= r[k,:]/symbs[k]*np.exp(-1j*2*np.pi*T*f_estt*(k+n))
+        i[index[k]]=i[index[k]]+1
+    #Anzahl soll auf Anzahl der Benutzung von jeder Sendeantenne angepasst werden
+    H_est=H_est/np.repeat(i,RA).reshape(-1,RA).transpose()
+    H_diff=H-H_est
+   
+    #Likelihood function for Timing estimation       
+    for m in range(0,symbs.size):
+        L[n-1]+=np.linalg.norm(r[m,:]-H_est[:,index[m]]*np.exp(1j*2*np.pi*T*m)*symbs[m])**2
         #Anpassung an Anzahl der Benutzung von SA?
     n_est=np.argmin(L)+1
     ##    
@@ -129,7 +123,7 @@ for n in range(1,n_range):
 f_est=ML_approx_unknown(r_off_ft[:-n_est,:],T,symbols[n_est:],ibits[:,n_est:])  
 sy=symbols[n_est:]
 
-
+#(test OK)
 
 
 
