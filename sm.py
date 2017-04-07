@@ -22,17 +22,17 @@ SA=4
 #number of sender antennas
 RA=4
 #number of receiver antennas
-M=2
+M=4
 #data bits modulation order (BPSK)
-mpsk_map=np.array([1,-1])
-#mpsk_map =1/np.sqrt(2) * np.array([1, 1j, -1j, -1], dtype=complex)
-N=100
+#mpsk_map=np.array([1,-1])
+mpsk_map =1/np.sqrt(2) * np.array([1+1j, 1+1j, 1-1j, -1-1j], dtype=complex)
+N=300
 #number of symbols
 T=1*1e-5
 #symbol duration
-f_off=24
-n_off=5
-phi_off=0
+f_off=90
+n_off=13
+phi_off=51
 #number of training symbols
 Ni=int(np.log2(SA))
 #number of Index bits per symbol
@@ -43,10 +43,10 @@ filter_=rrcfilter(8*n_up+1,n_up , 1,0)
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
 #???? BER fuer Index verschlechtet sich bei Uebungabtastung
 # besser mit rho=1
-H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
+#H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
 #H=np.abs(H)
 #Channel matrix
-#H=np.ones([RA,SA])
+H=np.ones([RA,SA])
 
 sender_=sender(N,Ni,Nd,mpsk_map,filter_)
 #tx
@@ -57,45 +57,44 @@ s=sender_.bbsignal()
 symbols=sender_.symbols
 ibits=sender_.ibits
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-##with Filter(noch zu bearbeiten)
-#receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,mpsk_map)
-#r=receiver_.channel()
-#r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-#BERi,BERd=receiver_.BER()
+#with Filter(noch zu bearbeiten,überabtastung!)
+receiver_=receiver(H,sender_,s,SNR_noise_dB,SNR_RA_dB,filter_,mpsk_map)
+r=receiver_.channel()
+r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+BERi,BERd=receiver_.BER()
 
 
-##with frequency offset
-#off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
-#r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
-#r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-#r_m=r_mf*np.exp(1j*2*np.pi*phi_off)
-#r=np.concatenate((r_m[n_off:],r_m[:n_off]))
+#with frequency offset
+off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
+r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
+r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+r_m=r_mf*np.exp(1j*2*np.pi*phi_off)
+r_off_ft=np.concatenate((r_m[n_off:],r_m[:n_off]))
 
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#without Filter
-off=np.exp(1j*2*np.pi*f_off*np.arange(symbols.size)*T)
-noise_variance_linear = 10**(-SNR_noise_dB / 10)
-s_a_index=np.repeat(bitarray2dec(ibits),n_up)
-rx=np.zeros((symbols.size,H.shape[0]),complex)
-for j in range(0,H.shape[0]):
-    for i in range(0,s_a_index.size):
-        n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(symbols.size)+1j*np.random.randn(symbols.size) )
-        rx[i,j]=np.sqrt(10**(SNR_RA_dB / 10))*symbols[i]*H[j,s_a_index[i]]
-        rx[:,j]=rx[:,j]+n
-        
-#with offsets        
-r_off_f=rx*np.repeat(off,RA).reshape([-1,RA])
-r_off_ft=np.concatenate((r_off_f[n_off:],r_off_f[:n_off]))
-r=r_off_ft
+##without Filter
+#off=np.exp(1j*2*np.pi*f_off*np.arange(symbols.size)*T)
+#noise_variance_linear = 10**(-SNR_noise_dB / 10)
+#s_a_index=np.repeat(bitarray2dec(ibits),n_up)
+#rx=np.zeros((symbols.size,H.shape[0]),complex)
+#for j in range(0,H.shape[0]):
+#    for i in range(0,s_a_index.size):
+#        n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(symbols.size)+1j*np.random.randn(symbols.size) )
+#        rx[i,j]=np.sqrt(10**(SNR_RA_dB / 10))*symbols[i]*H[j,s_a_index[i]]
+#        rx[:,j]=rx[:,j]+n
+#        
+##with offsets        
+#r_off_f=rx*np.repeat(off,RA).reshape([-1,RA])
+#r_off_ft=np.concatenate((r_off_f[n_off:],r_off_f[:n_off]))
+#
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#Joint Estimation for f_off,n_off and CSI
-n_range=10
+#Joint Estimation for f_off,n_off and CSI 
+n_range=20
 L=np.zeros(n_range-1)
 #when n=0 function doesn't work,this situation should be tested by a if command
 for n in range(1,n_range):
-#n=n_off
     r=r_off_ft[:-n,:] 
     symbs=symbols[n:]
     index=bitarray2dec(ibits[:,n:])
@@ -114,14 +113,10 @@ for n in range(1,n_range):
     #Likelihood function for Timing estimation       
     for m in range(0,symbs.size):
         L[n-1]+=np.linalg.norm(r[m,:]-H_est[:,index[m]]*np.exp(1j*2*np.pi*T*m)*symbs[m])**2
-        #Anpassung an Anzahl der Benutzung von SA?
-    n_est=np.argmin(L)+1
-    ##    
+    n_est=np.argmin(L)+1   
 
-#n_est=n_off
 
 f_est=ML_approx_unknown(r_off_ft[:-n_est,:],T,symbols[n_est:],ibits[:,n_est:])  
-sy=symbols[n_est:]
 
 #(test OK)
 
@@ -129,7 +124,7 @@ sy=symbols[n_est:]
 
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#t1=time.clock()
+
 #Frequency offset estimation with ML-Approximation(data-aided) with known channel
 #f_est=ML_approx1(r_mf,T,symbols,ibits,H)
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -150,10 +145,13 @@ sy=symbols[n_est:]
 #H_est=H_est/np.repeat(i,RA).reshape(-1,RA).transpose()
 #H_diff=H-H_est
 ##(tested,ok for all situations)
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 ##Frequency offset estimation with Non-Data-Aided method based on MPSK
 #f_of=NDA(r_mf,M,T,H)
 #r_of= np.repeat(r_mf,H.shape[1]).reshape([N,RA,SA])
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#duration test
+#t1=time.clock()
 #t=time.clock()-t1
 
 
