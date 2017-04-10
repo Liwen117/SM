@@ -10,7 +10,7 @@ from commpy.utilities import bitarray2dec
 
 #data-aided ML Approximation with known channel(Voraussetzung:f_off<<1/T)
 def ML_approx_known(r_,T,symbols,ibits,H):
-    f_delta=2
+    f_delta=1
     f_range=100
     interp_fact=10
     p=np.zeros([int(f_range/f_delta),H.shape[0]],complex)
@@ -88,7 +88,7 @@ def ML_approx_unknown(y,T,symbols,ibits):
     N=1/np.sum(symbols**2)
     index=bitarray2dec(ibits)
     
-    for m in range(1,y.shape[0]):
+    for m in range(0,y.shape[0]):
         for k in range(m,y.shape[0]):
             if index[k]==index[k-m]:
                 R[m]+=np.dot(np.conj(y[k-m,:]),y[k,:])*symbols[k]*symbols[k-m]*N

@@ -12,7 +12,7 @@ import numpy as np
 from commpy.utilities import dec2bitarray,bitarray2dec
 from collections import Counter
 class receiver():
-    def __init__(self,H,sender_,SNR_noise_dB,SNR_RA_dB,filter_,mapp):
+    def __init__(self,H,sender_,SNR_dB,filter_,mapp):
         self.H=H
         #self.H_est=H_est
         self.ibits=sender_.ibits
@@ -21,8 +21,7 @@ class receiver():
         self.Nd=sender_.Nd
         self.s=sender_.bbsignal()
         self.symbols=sender_.only_upsampling()
-        self.SNR_noise_dB=SNR_noise_dB
-        self.SNR_RA_dB=SNR_RA_dB
+        self.SNR_dB=SNR_dB
         self.MF_ir=filter_.ir()
         self.sps=filter_.n_up
         self.mapp=mapp
@@ -34,7 +33,7 @@ class receiver():
       
 #index fuer group delay waehlen, zusammen nach MF loeschen         
     def channel(self):
-        noise_variance_linear = 10**(-self.SNR_noise_dB / 10)
+        noise_variance_linear = 10**(-self.SNR_dB / 10)
         s_a_index=np.repeat(bitarray2dec(self.ibits),self.sps)
         #turn index bits to the Antenne index 
          
@@ -50,18 +49,18 @@ class receiver():
         for j in range(0,self.H.shape[0]):
             for i in range(0,s_a_index.size):
                 n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(self.s.size)+1j*np.random.randn(self.s.size) )
-                r[i,j]=np.sqrt(10**(self.SNR_RA_dB / 10))*self.s[i]*self.H[j,s_a_index[i]]
+                r[i,j]=self.s[i]*self.H[j,s_a_index[i]]
                 r[:,j]=r[:,j]+n
         self.r=r
         return r
     def channel_nf(self,n_up):
-        noise_variance_linear = 10**(-self.SNR_noise_dB / 10)
+        noise_variance_linear = 10**(-self.SNR_dB / 10)
         s_a_index=np.repeat(bitarray2dec(self.ibits),n_up)
         rx=np.zeros((self.symbols.size,self.H.shape[0]),complex)
         for j in range(0,self.H.shape[0]):
             for i in range(0,s_a_index.size):
                 n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(self.symbols.size)+1j*np.random.randn(self.symbols.size) )
-                rx[i,j]=np.sqrt(10**(self.SNR_RA_dB / 10))*self.symbols[i]*self.H[j,s_a_index[i]]
+                rx[i,j]=self.symbols[i]*self.H[j,s_a_index[i]]
                 rx[:,j]=rx[:,j]+n
         return rx
     
@@ -99,7 +98,7 @@ class receiver():
 #        for j in range(0,self.H.shape[0]):
 #            for i in range(0,s_a_index.size):
 #                n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(self.s.size)+1j*np.random.randn(self.s.size) )
-#                r[i,j]=np.sqrt(10**(self.SNR_RA_dB / 10))*self.s[i]*self.H[j,s_a_index[i]]
+#                r[i,j]=self.s[i]*self.H[j,s_a_index[i]]
 #                r[:,j]=r[:,j]+n
 #        self.r=r
 #    
@@ -122,15 +121,15 @@ class receiver():
         g=np.zeros((n,self.mapp.size,r.shape[0]),complex)
         yi=np.zeros(r.shape[0])
         yd=np.zeros(r.shape[0])
-        yi_=np.zeros(r.shape[0]/self.sps)
-        yd_=np.zeros(r.shape[0]/self.sps)
+        yi_=np.zeros(r.shape[0]//self.sps)
+        yd_=np.zeros(r.shape[0]//self.sps)
         for i in range(0,r.shape[0]):
             #i.th symbol
             for j in range(0,n):
                 #which sender
                 for q in range(0,self.mapp.size):
                     #which datasymbol
-                    g[j,q,i]=np.sqrt(10**(self.SNR_RA_dB / 10))*np.linalg.norm(H_est[:,j]*self.mapp[q])**2-2*np.real(np.dot(r[i],H_est[:,j]*self.mapp[q]))
+                    g[j,q,i]=np.linalg.norm(H_est[:,j]*self.mapp[q])**2-2*np.real(np.dot(np.conj(r[i]),H_est[:,j]*self.mapp[q]))
             yi[i],yd[i]=np.unravel_index(np.argmin(g[:,:,i]), (n,self.mapp.size))
         if self.sps!=1:    
             yii=yi.reshape([-1,self.sps])
@@ -169,7 +168,7 @@ class receiver():
 #        return r_BBr,r_BBi
 
 #
-#def detector(H,SNR_RA_dB,mapp,r):
+#def detector(H,mapp,r):
 #    n=H.shape[1]
 #    g=np.zeros((n,mapp.size,r.shape[0]),complex)
 #    yi=np.zeros(r.shape[0])
@@ -180,7 +179,7 @@ class receiver():
 #            #which sender
 #            for q in range(0,mapp.size):
 #                #which datasymbol
-#                g[j,q,i]=np.sqrt(10**(SNR_RA_dB / 10))*np.linalg.norm(H[:,j]*mapp[q])**2-2*np.real(r[i]@H[:,j]*mapp[q])
+#                g[j,q,i]=np.linalg.norm(H[:,j]*mapp[q])**2-2*np.real(r[i]@H[:,j]*mapp[q])
 #        yi[i],yd[i]=np.unravel_index(np.argmin(g[:,:,i]), (n,mapp.size))
 #        return yi,yd
 

@@ -7,6 +7,7 @@ Created on Wed Mar 15 17:56:21 2017
 """
 import numpy as np  
 from commpy.utilities import bitarray2dec
+import training_sequence as tr
 class sender():
     def __init__(self,N,Ni,Nd,mapp,filter_):
         self.N=N
@@ -15,12 +16,12 @@ class sender():
         self.mapp=mapp
         self.ir=filter_.ir()
         self.sps=filter_.n_up
-        self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
+#        self.ibits,self.dbits=tr.training_symbols(N,Nd,Ni)
+        self.idbits=np.random.choice([1],self.N*(self.Ni+self.Nd))
     
 
         
 
-    
     def divide_index_data_bits(self):
         #if (idbits.size % (Ni+Nd) !=0):
         #   idbits=idbit[:idbits.size-idbits.size % (Ni+Nd)]
