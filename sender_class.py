@@ -15,14 +15,16 @@ class sender():
         self.mapp=mapp
         self.ir=filter_.ir()
         self.sps=filter_.n_up
+        self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
     
-    def generate_training_bits(self):
-        return  np.random.choice([0,1],self.N*(self.Ni+self.Nd))
+
+        
+
     
     def divide_index_data_bits(self):
         #if (idbits.size % (Ni+Nd) !=0):
         #   idbits=idbit[:idbits.size-idbits.size % (Ni+Nd)]
-        divided_bits=self.generate_training_bits().reshape((self.Nd+self.Ni,-1))
+        divided_bits=self.idbits.reshape((self.Nd+self.Ni,-1))
         ibits=divided_bits[0:self.Ni,:]
         dbits=divided_bits[self.Ni:self.Ni+self.Nd,:]
         self.dbits= dbits
@@ -37,15 +39,27 @@ class sender():
 #        s = np.zeros(symbols.size*self.sps+self.ir.size-1)
 #        for i in range(symbols.size):
 #            s[i*self.sps:i*self.sps+self.ir.size]+=symbols[i]*self.ir
-         #??? which one is right???
+         #??? which one is right/better???
          #zero-padding
         symbols_up = np.zeros(symbols.size * self.sps)
         symbols_up[::self.sps] = symbols
-        s = np.convolve(self.ir, symbols_up)
-            
+        s = np.convolve(self.ir, symbols_up)            
         return s
+            
+        
 #        symbols_up = np.repeat(symbs,self.sps)
 #        return np.convolve(self.ir, symbols_up)
+
+    def only_upsampling(self):
+#repeat value
+        symbols_up = np.repeat(self.symbols,self.sps)
+         #??? which one is right/better???
+         #zero-padding
+#        symbols_up = np.zeros(self.symbols.size * self.sps)
+#        symbols_up[::self.sps] = self.symbols
+        self.symbols_up=symbols_up
+        return symbols_up
+
 
         
 #    def mixer(s_BBr,s_BBi,fc,fs):
