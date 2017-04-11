@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 15 17:56:21 2017
+
+@author: Liwen
+"""
+import numpy as np  
+from commpy.utilities import bitarray2dec
+import training_sequence as tr
+class sender():
+    def __init__(self,N,Ni,Nd,mapp,filter_):
+        self.N=N
+        self.Ni=Ni
+        self.Nd=Nd
+        self.mapp=mapp
+        self.ir=filter_.ir()
+        self.sps=filter_.n_up
+#        self.ibits,self.dbits=tr.training_symbols(N,Nd,Ni)
+        self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
+        
+        self.bbsignal()
+
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    def divide_index_data_bits(self):
+        #if (idbits.size % (Ni+Nd) !=0):
+        #   idbits=idbit[:idbits.size-idbits.size % (Ni+Nd)]
+        divided_bits=self.idbits.reshape((self.Nd+self.Ni,-1))
+        ibits=divided_bits[0:self.Ni,:]
+        dbits=divided_bits[self.Ni:self.Ni+self.Nd,:]
+        self.dbits= dbits
+        self.ibits= ibits
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    def databits_mapping(self):
+        indices=bitarray2dec(self.dbits) 
+        self.symbols=self.mapp[indices]
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+    def databits_pulseforming(self,symbols):
+        #repeat value
+#        s = np.zeros(symbols.size*self.sps+self.ir.size-1)
+#        for i in range(symbols.size):
+#            s[i*self.sps:i*self.sps+self.ir.size]+=symbols[i]*self.ir
+         #??? which one is right/better???
+         #zero-padding
+        symbols_up = np.zeros(symbols.size * self.sps)
+        symbols_up[::self.sps] = symbols
+        s = np.convolve(self.ir, symbols_up)            
+        return s
+      
+#        symbols_up = np.repeat(symbs,self.sps)
+#        return np.convolve(self.ir, symbols_up)
+            
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+    def only_upsampling(self):
+#repeat value
+        symbols_up = np.repeat(self.symbols,self.sps)
+         #??? which one is right/better???
+         #zero-padding
+#        symbols_up = np.zeros(self.symbols.size * self.sps)
+#        symbols_up[::self.sps] = self.symbols
+        self.symbols_up=symbols_up
+        return symbols_up
+
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+
+    def bbsignal(self):
+        self.divide_index_data_bits()
+        self.databits_mapping()
+        s_BBr=self.databits_pulseforming(np.real(self.symbols))
+        s_BBi=self.databits_pulseforming(np.imag(self.symbols))
+        return s_BBr+1j*s_BBi
