@@ -26,7 +26,7 @@ import time
 from commpy.utilities import bitarray2dec 
 import matplotlib.pyplot as plt  # plotting library
 #def sm(n_up):
-SNR_dB=50
+SNR_dB=30
 
 SA=4
 #number of sender antennas
@@ -36,12 +36,12 @@ M=2
 #data bits modulation order (BPSK)
 mpsk_map=np.array([1,-1])
 #mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-N=100
+N=12
 #number of symbols
 T=1*1e-6
 #symbol duration
-f_off=0.3*1/T
-n_off=5
+f_off=5124
+n_off=2
 phi_off=0
 #number of training symbols
 Ni=int(np.log2(SA))
@@ -128,7 +128,7 @@ r_off_ft=np.concatenate((r_off_f[n_off:],r_off_f[:n_off]))
 #f_est=ML_unknown(r,T,symbols,ibits)
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #ML_approx with channel unknown
-#f_est=ML_approx_unknown(r,T,symbols,ibits)
+f_est1=ML_approx_unknown(r_off_f,T,symbols,ibits)
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ##Channel Estimation
 #H_est=np.zeros([RA,SA],complex)  
@@ -152,7 +152,7 @@ r_off_ft=np.concatenate((r_off_f[n_off:],r_off_f[:n_off]))
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Joint Estimation for f_off,n_off and CSI 
-n_range=20
+n_range=N-1
 L=np.zeros(n_range-1)
 #when n=0 function doesn't work,this situation should be tested by a if command
 for n in range(1,n_range):
@@ -224,7 +224,7 @@ BERi,BERd=test.BER(yi,yd,Ni,Nd,ibits[:,n_est:],dbits[:,n_est:])
 
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-f_est=f_est*T
+#f_est=f_est*T
 print(f_est,n_est)    
 
 

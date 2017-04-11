@@ -17,7 +17,7 @@ class sender():
         self.ir=filter_.ir()
         self.sps=filter_.n_up
 #        self.ibits,self.dbits=tr.training_symbols(N,Nd,Ni)
-        self.idbits=np.random.choice([1],self.N*(self.Ni+self.Nd))
+        self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
     
 
         
