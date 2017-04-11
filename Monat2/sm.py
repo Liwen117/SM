@@ -9,8 +9,8 @@ Created on Wed Mar 15 14:25:31 2017
 
 import numpy as np  
 from rrc import rrcfilter
-from sender_class import sender
-from receiver_class import receiver
+from sender import sender
+from receiver import receiver
 import test
 from f_sync import ML_approx_known, ML_unknown, ML_approx_unknown
 import time
@@ -128,7 +128,6 @@ for n in range(1,n_range):
     H_est=np.zeros([RA,SA],complex)  
     i=np.zeros(SA)
     #Channel estimation
-
     for k in range(0,symbs.size):
         H_est[:,index[k]]+= r[k,:]/symbs[k]*np.exp(-1j*2*np.pi*T*f_estt*(k+n))
         i[index[k]]=i[index[k]]+1
@@ -142,9 +141,8 @@ for n in range(1,n_range):
 
 r_n_syc=r_off_ft[:-n_est,:]
 
-#save Estimation results for each n or one more estimation after estimation for n?(2)
+#one more estimation after estimation for n (or save Estimation results for each n ?
 f_est=ML_approx_unknown(r_n_syc,T,symbols[n_est:],ibits[:,n_est:]) 
-
 symbs=symbols[n_est:]
 index=bitarray2dec(ibits[:,n_est:])
 H_est=np.zeros([RA,SA],complex) 
@@ -154,7 +152,9 @@ for k in range(0,symbs.size):
     i[index[k]]=i[index[k]]+1
 H_est=H_est/np.repeat(i,RA).reshape(-1,RA).transpose()
 H_diff=H-H_est
-#f sychr
+
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#Frequency synchronisation
 off_syc=np.exp(-1j*2*np.pi*f_est*(np.arange(r_n_syc.shape[0])+n_est)*T)
 r_ft_syc=r_n_syc*np.repeat(off_syc,RA).reshape([-1,RA])
 

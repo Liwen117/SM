@@ -16,8 +16,8 @@ class sender():
         self.mapp=mapp
         self.ir=filter_.ir()
         self.sps=filter_.n_up
-#        self.ibits,self.dbits=tr.training_symbols(N,Nd,Ni)
-        self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
+        self.ibits,self.dbits=tr.training_symbols(N,Nd,Ni)
+        #self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
         
         self.bbsignal()
 
@@ -65,7 +65,7 @@ class sender():
         
 
     def bbsignal(self):
-        self.divide_index_data_bits()
+        #self.divide_index_data_bits()
         self.databits_mapping()
         s_BBr=self.databits_pulseforming(np.real(self.symbols))
         s_BBi=self.databits_pulseforming(np.imag(self.symbols))

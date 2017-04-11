@@ -9,16 +9,15 @@ Created on Wed Mar 15 14:25:31 2017
 
 import numpy as np  
 from rrc import rrcfilter
-from sender_class import sender
-from receiver_class import receiver
+from sender import sender
+from receiver import receiver
 import test
 from f_sync import ML_approx_known, ML_unknown, ML_approx_unknown
 import time
 from commpy.utilities import bitarray2dec 
 import matplotlib.pyplot as plt  
 
-def sm():
-    SNR_dB=50
+def sm(SNR_dB):
     #number of sender antennas
     SA=4
     #number of receiver antennas
@@ -164,19 +163,11 @@ def sm():
     #yi,yd=rr.detector(H_est,SNR_dB,mpsk_map,r_ft_syc)
     BERi,BERd=test.BER(yi,yd,Ni,Nd,ibits[:,n_est:],dbits[:,n_est:])
     
-    
-    
-    
-
-
-
-
-
 
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    return(f_est,n_est)    
+    return(BERi_0,BERd_0)    
 
 
 

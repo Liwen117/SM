@@ -3,10 +3,10 @@
 """
 Created on Mon Apr 10 11:17:42 2017
 
-@author: lena
+@author: Liwen
 """
 import numpy as np
-from commpy.utilities import dec2bitarray,bitarray2dec
+from commpy.utilities import dec2bitarray
 
 def BER(yi,yd,Ni,Nd,ibits,dbits):
     xi=np.zeros((yi.size,Ni))
