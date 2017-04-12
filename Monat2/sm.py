@@ -16,7 +16,7 @@ from f_sync import ML_approx_known, ML_unknown, ML_approx_unknown
 import time
 from commpy.utilities import bitarray2dec 
 import matplotlib.pyplot as plt  
-
+from joint_estimation import joint_estimation
 
 SNR_dB=30
 #number of sender antennas
@@ -28,7 +28,7 @@ M=2
 mpsk_map=np.array([1,-1])
 #mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
 #number of symbols
-N=200
+N=100
 #number of training symbols
 N_known=50
 #symbol duration
@@ -40,7 +40,7 @@ print("f_off=",f_off)
 #n_off=2
 #phase offset
 phi_off=np.random.random()*2*np.pi
-phi_off=0
+#phi_off=0
 #number of Index bits per symbol
 Ni=int(np.log2(SA))
 #number of Data bits per symbol
@@ -123,7 +123,7 @@ r_off_ft=r_mf*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #coarse Estimation for f_off
-f_off_coarse=f_off*0.8
+f_off_coarse=f_off*0.5
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #coarse synchronisation for f_off
 off_syc=np.exp(-1j*2*np.pi*f_off_coarse*np.arange(r_mf.shape[0])*T/filter_.n_up)
@@ -132,39 +132,11 @@ print(f_off-f_off_coarse)
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Joint Estimation for f_off,n_start and CSI 
-n_range=N-N_known
-L=np.zeros(n_range-1)
-#when n=0 function doesn't work,this situation should be tested by a if command
-index=bitarray2dec(ibits_known)
-for n in range(1,n_range):   
-    f_estt=ML_approx_unknown(r_syc_coarse[n:n+N_known],T,symbols_known,ibits_known)
-    H_est=np.zeros([RA,SA],complex)  
-    i=np.zeros(SA)
-    #Channel estimation
-    r=r_syc_coarse[n:n+N_known+1]
-    for k in range(0,symbols_known.size):
-        H_est[:,index[k]]+= r[k,:]/symbols_known[k]*np.exp(-1j*2*np.pi*T*f_estt*(k+n))
-        i[index[k]]=i[index[k]]+1
-    #Anzahl soll auf Anzahl der Benutzung von jeder Sendeantenne angepasst werden
-    H_est=H_est/np.repeat(i,RA).reshape(-1,RA).transpose()
-   
-    #Likelihood function for Timing estimation       
-    for m in range(0,symbols_known.size):
-        L[n-1]+=np.linalg.norm(r[m,:]-H_est[:,index[m]]*np.exp(1j*2*np.pi*T*m)*symbols_known[m])**2
-    n_est=np.argmin(L)+1   
-
-r=r_syc_coarse[n_est:n_est+N_known]
-
-##one more estimation after estimation for n (or save Estimation results for each n ?
-f_est=ML_approx_unknown(r,T,symbols_known,ibits_known)
-H_est=np.zeros([RA,SA],complex) 
-i=np.zeros(SA)
-for k in range(0,symbols_known.size):
-    H_est[:,index[k]]+= r[k,:]/symbols_known[k]*np.exp(-1j*2*np.pi*T*f_est*(k+n_est))
-    i[index[k]]=i[index[k]]+1
-H_est=H_est/np.repeat(i,RA).reshape(-1,RA).transpose()
-
-#
+j=joint_estimation()
+j.function(r_syc_coarse,N,N_known,T,ibits_known,symbols_known,SA,RA)
+f_est=j.f_est
+n_est=j.n_est
+H_est=j.H_est
 #    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Frequency synchronisation
 off_syc=np.exp(-1j*2*np.pi*f_est*(np.arange(r_mf.shape[0]))*T)

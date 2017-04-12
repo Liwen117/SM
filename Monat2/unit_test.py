@@ -6,14 +6,16 @@ Created on Wed Apr 12 16:07:53 2017
 @author: lena
 """
 from sm_class import sm
-r=80
-SNR=30
+import numpy as np
+r=50
+SNR=np.arange(0,50,5)
 N=100
 N_known=30
 threshold=0.01
 
-c=0
-for i in range(0,r):
-    c+=sm(SNR,N,N_known,threshold)
-    
-print(c,"times of ",r,"successes")
+c=np.zeros(SNR.size)
+for j in range(0,SNR.size):
+    for i in range(0,r):
+        c[j]+=sm(SNR[j],N,N_known,threshold)
+c=1-c/r
+#print(c,"times of ",r,"successes")
