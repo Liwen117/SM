@@ -31,8 +31,8 @@ def ML_approx_known(r_,T,symbols,ibits,H):
 
 #data-aided ML with channel unknown
 def ML_unknown(y,T,symbols,ibits):
-    f_delta=10
-    f_range=10000
+    f_delta=1
+    f_range=100
     interp_fact=1
     R=np.zeros(y.shape[0],complex)
     X=np.zeros(int(f_range/f_delta),complex)

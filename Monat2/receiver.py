@@ -55,17 +55,20 @@ class receiver():
 
     def Matched_Filter(self,r_BB):
         group_delay = (self.MF_ir.size - 1) // 2
+        group_delay=0
         r=np.zeros((len(r_BB)-self.MF_ir.size+1,r_BB.shape[1]),complex)
+        r=np.zeros((864,4))
         #for each receiver-antenne
         for i in range(0,r_BB.shape[1]):
             a= np.convolve(self.MF_ir, r_BB[:,i])
-            r[:,i] = a[ 2*group_delay: - 2*group_delay]
+            #r[:,i] = a[ 2*group_delay: - 2*group_delay]
+            r[:,i]=a
         #without downsampling
-        #return r
+        return r
         #with downsampling
-        r_down = r[::self.sps]
-        return r_down
-    
+#        r_down = r[::self.sps]
+#        return r_down
+#    
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
  

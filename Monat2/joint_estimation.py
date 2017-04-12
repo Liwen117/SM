@@ -6,7 +6,7 @@ Created on Wed Apr 12 16:21:55 2017
 @author: Liwen
 """
 import numpy as np
-from f_sync import ML_approx_unknown
+from f_sync import ML_approx_unknown,ML_unknown
 from commpy.utilities import bitarray2dec 
 
 class joint_estimation():
@@ -19,6 +19,7 @@ class joint_estimation():
         index=bitarray2dec(ibits_known)
         for n in range(1,n_range):   
             f_estt=ML_approx_unknown(r_syc_coarse[n:n+N_known],T,symbols_known,ibits_known)
+            #f_estt=ML_unknown(r_syc_coarse[n:n+N_known],T,symbols_known,ibits_known)
             H_est=np.zeros([RA,SA],complex)  
             i=np.zeros(SA)
             #Channel estimation
@@ -38,6 +39,7 @@ class joint_estimation():
         
         ##one more estimation after estimation for n (or save Estimation results for each n ?
         f_est=ML_approx_unknown(r,T,symbols_known,ibits_known)
+        #f_est=ML_unknown(r,T,symbols_known,ibits_known)
         H_est=np.zeros([RA,SA],complex) 
         i=np.zeros(SA)
         for k in range(0,symbols_known.size):

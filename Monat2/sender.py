@@ -46,14 +46,14 @@ class sender():
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     def databits_pulseforming(self,symbols):
         #repeat value
-#        s = np.zeros(symbols.size*self.sps+self.ir.size-1)
-#        for i in range(symbols.size):
-#            s[i*self.sps:i*self.sps+self.ir.size]+=symbols[i]*self.ir
+        s = np.zeros(symbols.size*self.sps+self.ir.size-1)
+        for i in range(symbols.size):
+            s[i*self.sps:i*self.sps+self.ir.size]+=symbols[i]*self.ir
          #??? which one is right/better???
          #zero-padding
-        symbols_up = np.zeros(symbols.size * self.sps)
-        symbols_up[::self.sps] = symbols
-        s = np.convolve(self.ir, symbols_up)            
+#        symbols_up = np.zeros(symbols.size * self.sps)
+#        symbols_up[::self.sps] = symbols
+#        s = np.convolve(self.ir, symbols_up)            
         return s
       
 #        symbols_up = np.repeat(symbs,self.sps)
