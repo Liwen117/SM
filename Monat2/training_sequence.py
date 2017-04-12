@@ -22,13 +22,18 @@ def training_symbols(N,Nd,Ni):
 #        j=j+1
 #    #ibits=np.transpose(ibits_).reshape([-1,1])
     ibits=np.random.choice([0,1],N*Ni).reshape((Ni,-1))
-    ts=np.transpose([int(1),int(0)])
-    dbits=ts
-    for j in range(1,N//2//Nd):
-        dbits=np.concatenate((dbits,ts),0)
-        j=j+1
-    dbits=dbits.reshape((Nd,-1))
-    #dbits=np.random.choice([0,1],N*Nd).reshape((Nd,-1))
+    #ibits=np.array([1,0,1,0,1,1,1,1,1,0,1,1,1,1,0,1,1,0,1,1,1,0,1,1]).reshape((2,-1))
+    #ibits=np.array([0,0,1,0,1,0,1,1,1,1,1,1,0,1,1,1]).reshape((2,-1))
+    #ibits=np.array([0,0,0,0,1,1,1,1,0,0,0,1,0,0,1,1]).reshape((2,-1))
+
+
+#    ts=np.transpose([int(1),int(0)])
+#    dbits=ts
+#    for j in range(1,N//2//Nd):
+#        dbits=np.concatenate((dbits,ts),0)
+#        j=j+1
+#    dbits=dbits.reshape((Nd,-1))
+    dbits=np.random.choice([0,1],N*Nd).reshape((Nd,-1))
     #dbits=np.random.choice([1],N*Nd).reshape((Nd,-1))
     return ibits,dbits
 

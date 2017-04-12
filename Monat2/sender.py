@@ -9,30 +9,39 @@ import numpy as np
 from commpy.utilities import bitarray2dec
 import training_sequence as tr
 class sender():
-    def __init__(self,N,Ni,Nd,mapp,filter_):
+    def __init__(self,N_simu,N,Ni,Nd,mapp,filter_):
+        self.N_simu=N_simu
         self.N=N
         self.Ni=Ni
         self.Nd=Nd
         self.mapp=mapp
         self.ir=filter_.ir()
         self.sps=filter_.n_up
-        self.ibits,self.dbits=tr.training_symbols(N,Nd,Ni)
+        self.ibits,self.dbits=self.generate_simu_bits(N_simu,N,Nd,Ni)
         #self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
         
         self.bbsignal()
-
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    def divide_index_data_bits(self):
-        #if (idbits.size % (Ni+Nd) !=0):
-        #   idbits=idbit[:idbits.size-idbits.size % (Ni+Nd)]
-        divided_bits=self.idbits.reshape((self.Nd+self.Ni,-1))
-        ibits=divided_bits[0:self.Ni,:]
-        dbits=divided_bits[self.Ni:self.Ni+self.Nd,:]
-        self.dbits= dbits
-        self.ibits= ibits
+    def generate_simu_bits(self,N_simu,N,Nd,Ni):
+        self.n_start=np.random.randint(0,N_simu-N)        
+        self.ibits_known,self.dbits_known=tr.training_symbols(N,Nd,Ni)        
+        ibits=np.concatenate((np.random.choice([0,1],self.n_start*Ni).reshape((Ni,-1)),self.ibits_known,np.random.choice([0,1],(N_simu-self.n_start-N)*Ni).reshape((Ni,-1))),1 )     
+        dbits=np.concatenate((np.random.choice([0,1],self.n_start*Nd).reshape((Nd,-1)),self.dbits_known,np.random.choice([0,1],(N_simu-self.n_start-N)*Nd).reshape((Nd,-1))),1 )
+        return ibits,dbits
+    
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#    def divide_index_data_bits(self):
+#        #if (idbits.size % (Ni+Nd) !=0):
+#        #   idbits=idbit[:idbits.size-idbits.size % (Ni+Nd)]
+#        divided_bits=self.idbits.reshape((self.Nd+self.Ni,-1))
+#        ibits=divided_bits[0:self.Ni,:]
+#        dbits=divided_bits[self.Ni:self.Ni+self.Nd,:]
+#        self.dbits= dbits
+#        self.ibits= ibits
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     def databits_mapping(self):
         indices=bitarray2dec(self.dbits) 
+        self.symbols_known=self.mapp[bitarray2dec(self.dbits_known) ]
         self.symbols=self.mapp[indices]
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     def databits_pulseforming(self,symbols):
