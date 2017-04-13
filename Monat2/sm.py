@@ -12,19 +12,21 @@ from rrc import rrcfilter
 from sender import sender
 from receiver import receiver
 import test
-from f_sync import ML_approx_known, ML_unknown, ML_approx_unknown
+from f_sync import ML_approx_known, ML_unknown, ML_approx_unknown,FLL
 import time
 from commpy.utilities import bitarray2dec 
 import matplotlib.pyplot as plt  
 from joint_estimation import joint_estimation
+import scipy.linalg as lin
+import scipy.signal as sig
 #carrier Frequency
 fc=5.2*1e9  # IEEE 802.11 WLAN
 offset_range=40*1e-6
-SNR_dB=50
+SNR_dB=100
 #number of sender antennas
 SA=4
 #number of receiver antennas
-RA=4
+RA=1
 #data bits modulation order (BPSK)
 M=2
 mpsk_map=np.array([1,-1])
@@ -35,12 +37,14 @@ Ns=100
 Nf=20
 #number of symbols
 N=Ns*Nf
+N=4
 #number of training symbols
 N_known=0
 #symbol duration
-T=1*1e-6
+T=1*1e-3
 #Frequency offset
-f_off=np.random.randint(-fc*offset_range,fc*offset_range)
+f_off=np.random.randint(-fc*offset_range,fc*offset_range)*0.01
+f_off=100
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
 print("f_off=",f_off)
@@ -54,20 +58,22 @@ Ni=int(np.log2(SA))
 #number of Data bits per symbol
 Nd=int(np.log2(M))
 #Upsampling rate
-n_up=4
+n_up=1
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
-filter_=rrcfilter(40*n_up+1,n_up , 1,0)
+filter_=rrcfilter(6*n_up+1,n_up , 1,0)
 g=filter_.ir()
+
 
 #Channel matrix
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
-H=np.ones([RA,SA])
+#H=np.ones([RA,SA])
 
 #sender
 sender_=sender(N,N_known,Ni,Nd,mpsk_map,filter_)
 print("n_start=",sender_.n_start)
 #training symbols(/bits) which may be shared with receiver, when a data-aided method is used
 symbols_known=sender_.symbols_known
+symbols=sender_.symbols
 ibits=sender_.ibits
 dbits=sender_.dbits
 ibits_known=sender_.ibits_known
@@ -75,42 +81,60 @@ dbits_known=sender_.dbits_known
 
 
 s_BB=sender_.bbsignal()
-
 plt.figure()
-plt.plot(s_BB)
-plt.title("Baseband signal")
-plt.xlabel("Index")
+plt.scatter(s_BB.real, s_BB.imag)
+plt.xlabel('I'); plt.ylabel('Q')
+plt.title('Signal from sender');
+#Kommentar: Nullpunkt wegen Filterdelay
 
-plt.figure()
-f = np.linspace(-0.5, 0.5, s_BB.size)
-S_BB = np.abs(np.fft.fftshift(np.fft.fft(s_BB)))**2/s_BB.size
-plt.semilogy(f, S_BB)
-plt.xlim(-0.5, 0.5)
-plt.xlabel("f/B")
-plt.title("Baseband spectrum");
+#plt.figure()
+#plt.plot(s_BB)
+#plt.title("Baseband signal")
+#plt.xlabel("Index")
+
+#plt.figure()
+#f = np.linspace(-0.5, 0.5, s_BB.size)
+#S_BB = np.abs(np.fft.fftshift(np.fft.fft(s_BB)))**2/s_BB.size
+#plt.semilogy(f, S_BB)
+#plt.xlim(-0.5, 0.5)
+#plt.xlabel("f/B")
+#plt.title("Baseband spectrum");
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #with Filter(noch zu bearbeiten,überabtastung!)
 receiver_=receiver(H,sender_,SNR_dB,filter_,mpsk_map)
 r=receiver_.channel()
-r_mf=receiver_.r_mf
-sp=np.fft.fft(r)
+
+plt.figure()
+plt.scatter(r.real, r.imag)
+plt.xlabel('I'); plt.ylabel('Q')
+plt.title('Signal after channel');
+
+off=np.exp(1j*2*np.pi*f_off*np.arange(r.shape[0])*T/filter_.n_up)
+r_off_ft=r*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
+
+#r_mf=receiver_.r_mf
+#sp=np.fft.fft(r)
 #yi,yd=receiver_.detector(r_mf,H)
 #BERi_0,BERd_0=test.BER(yi,yd,Ni,Nd,ibits,dbits)
+#plt.figure()
+#plt.scatter(r_mf.real, r_mf.imag)
+#plt.xlabel('I'); plt.ylabel('Q')
+#plt.title('Signal after MF');
 
-plt.figure()
-plt.plot(r_mf)
-plt.title("Signal after MF")
-plt.xlabel("Index")
-
-plt.figure()
-i=1
-f = np.linspace(-0.5, 0.5, r_mf[:,i].size)
-R_MF = np.abs(np.fft.fftshift(np.fft.fft(r_mf[:,i])))**2/r_mf[:,i].size
-plt.semilogy(f, R_MF)
-plt.xlim(-0.5, 0.5)
-plt.xlabel("f/B")
-plt.title("Spectrum for Signal after MF");
+#plt.figure()
+#plt.plot(r_mf)
+#plt.title("Signal after MF")
+#plt.xlabel("Index")
+#
+#plt.figure()
+#i=1
+#f = np.linspace(-0.5, 0.5, r_mf[:,i].size)
+#R_MF = np.abs(np.fft.fftshift(np.fft.fft(r_mf[:,i])))**2/r_mf[:,i].size
+#plt.semilogy(f, R_MF)
+#plt.xlim(-0.5, 0.5)
+#plt.xlabel("f/B")
+#plt.title("Spectrum for Signal after MF");
 
 #with offsets
 #Frequency offset before MF(+filter length)
@@ -121,13 +145,119 @@ plt.title("Spectrum for Signal after MF");
 
 #r=receiver_.channel()
 #r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-off=np.exp(1j*2*np.pi*f_off*np.arange(r_mf.shape[0])*T/filter_.n_up)
-
+#off=np.exp(1j*2*np.pi*f_off*np.arange(r_mf.shape[0])*T/filter_.n_up)
 #
-r_off_ft=r_mf*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
+##
+#r_off_ft=r_mf*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
 #r_off_ft=np.concatenate((r_off_f[n_off:],r_off_f[:n_off]))*np.exp(1j*2*np.pi*phi_off)
 
 #
+plt.figure()
+plt.scatter(r_off_ft.real, r_off_ft.imag)
+plt.xlabel('I'); plt.ylabel('Q')
+plt.title('Signal with offset');
+
+
+plt.figure()
+f = np.linspace(-0.5, 0.5, s_BB.size)
+S_BB = np.abs(np.fft.fftshift(np.fft.fft(s_BB)))**2/s_BB.size
+plt.semilogy(f, S_BB)
+plt.xlim(-0.5, 0.5)
+plt.xlabel("f/B")
+
+R_off_ft = np.abs(np.fft.fftshift(np.fft.fft(r_off_ft)))**2/r_off_ft.size
+plt.semilogy(f, R_off_ft)
+plt.xlim(-0.5, 0.5)
+plt.xlabel("f/B")
+plt.title("Baseband spectrum without and with offset");
+
+#    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+##FLL
+g_mf=g
+r=r_off_ft[:,0]
+x_out=FLL(r,g_mf,n_up)
+
+plt.figure()
+f = np.linspace(-0.5, 0.5, x_out.size)
+S_BB = np.abs(np.fft.fftshift(np.fft.fft(x_out)))**2/x_out.size
+plt.semilogy(f, S_BB)
+plt.xlim(-0.5, 0.5)
+plt.xlabel("f/B")
+#    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#g_mf=g
+#r=r_off_ft[:,0]
+
+
+#k = np.arange(np.ceil(-len(g_mf)/2),np.floor(len(g_mf)/2)+1) 
+#T=1 
+#g_dmf= 2*np.pi*T*k[:]*g_mf[:] 
+## Ausgabe initialisieren 
+#x_out = np.zeros([len(r)/n_up*2,1],complex) 
+#f = 0 
+## 
+##Schrittweite 
+#gamma = 0.01 
+#x_buf = np.zeros([len(g_mf)-1],complex) 
+#x_1 = complex(0)
+#y_buf = np.zeros([len(g_dmf)-1],complex)
+#y_1 = complex(0)
+#nu = 0 
+#phi = 0 
+#cnt=0
+## 
+##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+##% Phasenkorrektur 
+##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+## 
+#for ii in range(0,len(r)): 
+##     
+##    % Korrektur des Eingangswertes 
+#    r[ii] = r[ii] * np.exp(1j*(-phi)) 
+##     
+##    % neues Phaseninkrement berechnen 
+#    phi = phi + 2*np.pi*nu/8000
+##     
+##    % Filteroperationen, MF+DMF 
+##    x=np.convolve(g_mf,r[ii])[0] 
+##    y=np.convolve(g_dmf,r[ii])[0] 
+#    (x,x_buf)=sig.lfilter(g_mf, np.ones(len(g_mf)),[r[ii]],0,x_buf)
+#    
+#    (y,y_buf)=sig.lfilter(g_dmf, np.ones(len(g_dmf)),[r[ii]],0,y_buf)
+#     
+##     
+##       
+##    % Downsample by 8 
+#    if (np.mod(ii,n_up) == 1): 
+##         
+##         Fehler berechnen 
+#            e = 0.5*np.imag(x_1*np.conj(y_1)) + 0.5*np.imag(x*np.conj(y))
+#            
+#            nu= nu + gamma*e[0];      
+##        Frequenzoffset berechnen 
+#            f=f+nu; 
+#
+#    if (np.mod(ii,n_up/2) == 1): 
+##         
+#        x_1 = x
+#        y_1 = y
+##         
+##        % Ausgabe, Faktor 2 ueberabgetastet! 
+#        x_out[cnt] = x
+#        cnt=cnt+1
+#
+#
+#plt.figure()
+#plt.scatter(x_out.real, x_out.imag)
+#plt.xlabel('I'); plt.ylabel('Q')
+#plt.title('Signal after FLL')
+#
+#f=f/len(r)*n_up
+#print(f)
+
+
+r_f_syc=x_out[6:-6:2]
+
 #    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ##### Frequency estimation without n_offset
 #    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,9 +315,9 @@ r_off_ft=r_mf*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
 #
 #    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ###Test for the Joint estimation
-#yi,yd=receiver_.detector(r_f_syc,H_est)
-##yi,yd=rr.detector(H_est,SNR_dB,mpsk_map,r_ft_syc)
-#BERi,BERd=test.BER(yi,yd,Ni,Nd,ibits,dbits)
+yi,yd=receiver_.detector(r_f_syc,H)
+#yi,yd=rr.detector(H_est,SNR_dB,mpsk_map,r_ft_syc)
+BERi,BERd=test.BER(yi,yd,Ni,Nd,ibits,dbits)
 #
 #
 ##
