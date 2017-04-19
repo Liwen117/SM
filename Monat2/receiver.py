@@ -31,7 +31,7 @@ class receiver():
      #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     
 #index fuer group delay waehlen, zusammen nach MF loeschen         
     def channel(self):
-        noise_variance_linear = 10**(-self.SNR_dB / 10)
+        noise_variance_linear = 10**(-self.SNR_dB/self.Nd / 10)
         s_a_index=np.repeat(bitarray2dec(self.ibits),self.sps)
         #turn index bits to the Antenne index 
          
