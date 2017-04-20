@@ -23,12 +23,12 @@ import Plot
 #carrier Frequency
 fc=5.2*1e9  # IEEE 802.11 WLAN
 offset_range=40*1e-6
-SNR_dB=10
+SNR_dB=30
 #=Eb/N0
 #number of sender antennas
 SA=2
 #number of receiver antennas
-RA=1
+RA=2
 #data bits modulation order (BPSK)
 M=2
 mpsk_map=np.array([1,-1])
@@ -39,7 +39,7 @@ Ns=100
 Nf=20
 #number of symbols
 N=Ns*Nf
-N=32
+N=5
 #number of training symbols
 N_known=0
 #symbol duration
@@ -47,6 +47,7 @@ T=1*1e-3
 #Frequency offset
 f_off=np.random.randint(-fc*offset_range,fc*offset_range)*0.01
 f_off=np.random.randint(-0.1/T,0.1/T)
+f_off=0
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
 print("f_off=",f_off)
@@ -60,13 +61,14 @@ Ni=int(np.log2(SA))
 #number of Data bits per symbol
 Nd=int(np.log2(M))
 #Upsampling rate
-n_up=1
+n_up=4
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
-filter_=rrcfilter(6*n_up+1,n_up , 1,0.5)
+filter_=rrcfilter(6*n_up+1,n_up , 1,0)
 g=filter_.ir()
+Plot.spectrum(g,"g")
 #Channel matrix
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
-H=np.ones([RA,SA])
+#H=np.ones([RA,SA])
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #sender
 sender_=sender(N,N_known,Ni,Nd,mpsk_map,filter_)
@@ -78,21 +80,24 @@ ibits=sender_.ibits
 dbits=sender_.dbits
 ibits_known=sender_.ibits_known
 dbits_known=sender_.dbits_known
-
+print(ibits[:,0]==ibits[:,1])
 
 s_BB=sender_.bbsignal()
+#spec=sender_.anti_image(s_BB)
+
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Plot.konstellation(s_BB,'Signal from sender')
 ##Kommentar: Nullpunkt wegen Filterdelay
-#Plot.timesignal(s_BB,"Baseband signal")
-#Plot.spectrum(s_BB,"Baseband spectrum")
+Plot.timesignal(s_BB,"Baseband signal")
+Plot.spectrum(s_BB,"Baseband spectrum")
 
+#!!Image filterung
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #with Filter(noch zu bearbeiten,überabtastung!)
 receiver_=receiver(H,sender_,SNR_dB,filter_,mpsk_map)
 r=receiver_.channel()
-rr=receiver_.channel()
+#Plot.timesignal(rr,"nach Kanal")
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Plot.konstellation(r,'Signal after channel')
 #Plot.timesignal(r,'Signal after channel')
@@ -102,7 +107,8 @@ rr=receiver_.channel()
 #off=np.exp(1j*2*np.pi*f_off*np.arange(r.shape[0])*T/filter_.n_up)
 #r_off_ft=r*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
 
-#r_mf=receiver_.r_mf
+
+
 #sp=np.fft.fft(r)
 #yi,yd=receiver_.detector(r_mf,H)
 #BERi_0,BERd_0=test.BER(yi,yd,Ni,Nd,ibits,dbits)
@@ -116,6 +122,13 @@ off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
 r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
 r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
 
+
+Plot.timesignal(r_mf[:,0],"nach MF")
+#Plot.timesignal(r_mf[:n_up],"1. Symbol nach MF")
+Plot.spectrum(r_mf[:,0],"nach MF")
+#Plot.spectrum(r_mf[:n_up],"1. Symbol nach MF")
+Plot.timesignal(receiver_.r_down[:,0],"downsampling")
+print(H[:,0],H[:,1])
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Plot.konstellation(r_mf,'Signal after MF')
 #Plot.timesignal(r_mf,'Signal after MF')
@@ -131,7 +144,7 @@ r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
 #r_off_ft=np.concatenate((r_off_f[n_off:],r_off_f[:n_off]))*np.exp(1j*2*np.pi*phi_off)
 
 # %%%%%%%%%%%%%%%%%%%%%%
-f_NDA=NDA(r,M,T,H,n_up)
+f_NDA=NDA(r_mf,M,T,H,n_up)
 print("NDA:",f_NDA)
 
 

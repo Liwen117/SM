@@ -80,3 +80,13 @@ class sender():
         s_BBr=self.databits_pulseforming(np.real(self.symbols))
         s_BBi=self.databits_pulseforming(np.imag(self.symbols))
         return s_BBr+1j*s_BBi
+#    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#    def anti_image(self,signal):
+#        SIGNAL = np.abs(np.fft.fftshift(np.fft.fft(signal)))**2/signal.size
+#        return SIGNAL
+#    
+    
+    
+    
+    
+    

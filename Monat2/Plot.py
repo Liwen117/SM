@@ -38,9 +38,10 @@ def konstellation(symbol,name):
     
 def timesignal(signal,name):
     plt.figure()
-    plt.plot(signal)
+    n = np.linspace(0, signal.size, signal.size)
+    plt.stem(n,signal)
     plt.title(name)
-    plt.xlabel("Index")
+    plt.xlabel("Index");plt.ylabel('signal(t)')
  
 def spectrum(signal,name):
     plt.figure()
@@ -50,3 +51,12 @@ def spectrum(signal,name):
     plt.xlim(-0.5, 0.5)
     plt.xlabel("f/B")
     plt.title(name);   
+    
+def STR(signal,name):
+    plt.figure()
+    f = np.linspace(-0.5, 0.5, signal.size)
+    SIGNAL = np.abs(np.fft.fftshift(np.fft.fft(np.abs(signal)**2)))/signal.size
+    plt.semilogy(f, SIGNAL)
+    plt.xlim(-0.5, 0.5)
+    plt.xlabel("f/B")
+    plt.title(name);    
