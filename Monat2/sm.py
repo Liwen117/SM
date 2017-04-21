@@ -28,7 +28,7 @@ SNR_dB=30
 #number of sender antennas
 SA=2
 #number of receiver antennas
-RA=2
+RA=1
 #data bits modulation order (BPSK)
 M=2
 mpsk_map=np.array([1,-1])
@@ -39,15 +39,16 @@ Ns=100
 Nf=20
 #number of symbols
 N=Ns*Nf
-N=5
+N=250
 #number of training symbols
 N_known=0
 #symbol duration
 T=1*1e-3
+#T=1
 #Frequency offset
 f_off=np.random.randint(-fc*offset_range,fc*offset_range)*0.01
 f_off=np.random.randint(-0.1/T,0.1/T)
-f_off=0
+f_off=320
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
 print("f_off=",f_off)
@@ -61,101 +62,117 @@ Ni=int(np.log2(SA))
 #number of Data bits per symbol
 Nd=int(np.log2(M))
 #Upsampling rate
-n_up=4
+n_up=8
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
-filter_=rrcfilter(6*n_up+1,n_up , 1,0)
+filter_=rrcfilter(6*n_up+1,n_up , 1,0.35)
 g=filter_.ir()
-Plot.spectrum(g,"g")
+#Plot.spectrum(g,"g")
 #Channel matrix
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
 #H=np.ones([RA,SA])
+f_est=[]
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#sender
-sender_=sender(N,N_known,Ni,Nd,mpsk_map,filter_)
-print("n_start=",sender_.n_start)
-#training symbols(/bits) which may be shared with receiver, when a data-aided method is used
-symbols_known=sender_.symbols_known
-symbols=sender_.symbols
-ibits=sender_.ibits
-dbits=sender_.dbits
-ibits_known=sender_.ibits_known
-dbits_known=sender_.dbits_known
-print(ibits[:,0]==ibits[:,1])
+fl=FLL(g,n_up)
+for i in range(0,250):
+    #sender
+    sender_=sender(N,N_known,Ni,Nd,mpsk_map,filter_)
+    #print("n_start=",sender_.n_start)
+    #training symbols(/bits) which may be shared with receiver, when a data-aided method is used
+    symbols_known=sender_.symbols_known
+    symbols=sender_.symbols
+    ibits=sender_.ibits
+    dbits=sender_.dbits
+    ibits_known=sender_.ibits_known
+    dbits_known=sender_.dbits_known
+    
+    
+    s_BB=sender_.bbsignal()
+    
+    #spec=sender_.anti_image(s_BB)
+    
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #Plot.konstellation(s_BB,'Signal from sender')
+    ###Kommentar: Nullpunkt wegen Filterdelay
+    #Plot.timesignal(s_BB,"Baseband signal")
+    #Plot.spectrum(s_BB,"Baseband spectrum")
+    
+    #!!Image filterung
+    
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #with Filter
+    receiver_=receiver(H,sender_,SNR_dB,filter_,mpsk_map)
+    group_delay = (g.size - 1) // 2
+    r=receiver_.channel()[group_delay:-group_delay,:]
+    
+    #Plot.timesignal(rr,"nach Kanal")
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #Plot.konstellation(r,'Signal after channel')
+    #Plot.timesignal(r[:,0],'Signal after channel')
+    #Plot.spectrum(r,'Signal after channel')
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    off=np.exp(1j*2*np.pi*f_off*np.arange(r.shape[0])*T/filter_.n_up)
+    r_off_ft=r*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
+    
+    
+    
+    #sp=np.fft.fft(r)
+    #yi,yd=receiver_.detector(r_mf,H)
+    #BERi_0,BERd_0=test.BER(yi,yd,Ni,Nd,ibits,dbits)
+    
+    
+    
+    #with offsets
+    #Frequency offset before MF(+filter length) 
+    #!!!T anpassen!!!
+    #f_off=0
+    #off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
+    #r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
+    #r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+    
+    
+    #Plot.timesignal(r_mf[:,0],"nach MF")
+    #Plot.timesignal(r_mf[:n_up],"1. Symbol nach MF")
+    #Plot.spectrum(r_mf[:,0],"nach MF")
+    #Plot.spectrum(r_mf[:n_up],"1. Symbol nach MF")
+    #Plot.timesignal(receiver_.r_down[:,0],"downsampling")
+    
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #Plot.konstellation(r_mf,'Signal after MF')
+    #Plot.timesignal(r_mf,'Signal after MF')
+    #Plot.spectrum(r_mf,'Signal after MF')
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #offset after MF
+    #r=receiver_.channel()
+    #r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+    #off=np.exp(1j*2*np.pi*f_off*np.arange(r_mf.shape[0])*T/filter_.n_up)
+    #
+    ##
+    #r_off_ft=r_mf*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
+    #r_off_ft=np.concatenate((r_off_f[n_off:],r_off_f[:n_off]))*np.exp(1j*2*np.pi*phi_off)
+    
+    # %%%%%%%%%%%%%%%%%%%%%%
+    #f_NDA=NDA(r_mf,M,T,H,n_up)
+    #print("NDA:",f_NDA)
+    
+    
+    
+    
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #FLL
+    #CSI=true
+    
+    g_mf=g
+    
+    r=r_off_ft[:,0]
+    
+    #for i in range(0,500):
+    #    r=r*np.exp(-1j*2*np.pi*f*np.arange(sender_.bbsignal().size)*T/filter_.n_up)    
+        #print("phi=",fl.phi)
+    x_out,f=fl.recovery(r)
+    f_est.append(f)
 
-s_BB=sender_.bbsignal()
-#spec=sender_.anti_image(s_BB)
 
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#Plot.konstellation(s_BB,'Signal from sender')
-##Kommentar: Nullpunkt wegen Filterdelay
-Plot.timesignal(s_BB,"Baseband signal")
-Plot.spectrum(s_BB,"Baseband spectrum")
-
-#!!Image filterung
-
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#with Filter(noch zu bearbeiten,überabtastung!)
-receiver_=receiver(H,sender_,SNR_dB,filter_,mpsk_map)
-r=receiver_.channel()
-#Plot.timesignal(rr,"nach Kanal")
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#Plot.konstellation(r,'Signal after channel')
-#Plot.timesignal(r,'Signal after channel')
-#Plot.spectrum(r,'Signal after channel')
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-#off=np.exp(1j*2*np.pi*f_off*np.arange(r.shape[0])*T/filter_.n_up)
-#r_off_ft=r*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
-
-
-
-#sp=np.fft.fft(r)
-#yi,yd=receiver_.detector(r_mf,H)
-#BERi_0,BERd_0=test.BER(yi,yd,Ni,Nd,ibits,dbits)
-
-
-
-#with offsets
-#Frequency offset before MF(+filter length) 
-#!!!T anpassen!!!
-off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
-r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
-r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-
-
-Plot.timesignal(r_mf[:,0],"nach MF")
-#Plot.timesignal(r_mf[:n_up],"1. Symbol nach MF")
-Plot.spectrum(r_mf[:,0],"nach MF")
-#Plot.spectrum(r_mf[:n_up],"1. Symbol nach MF")
-Plot.timesignal(receiver_.r_down[:,0],"downsampling")
-print(H[:,0],H[:,1])
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#Plot.konstellation(r_mf,'Signal after MF')
-#Plot.timesignal(r_mf,'Signal after MF')
-#Plot.spectrum(r_mf,'Signal after MF')
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#offset after MF
-#r=receiver_.channel()
-#r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-#off=np.exp(1j*2*np.pi*f_off*np.arange(r_mf.shape[0])*T/filter_.n_up)
-#
-##
-#r_off_ft=r_mf*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
-#r_off_ft=np.concatenate((r_off_f[n_off:],r_off_f[:n_off]))*np.exp(1j*2*np.pi*phi_off)
-
-# %%%%%%%%%%%%%%%%%%%%%%
-f_NDA=NDA(r_mf,M,T,H,n_up)
-print("NDA:",f_NDA)
-
-
-
-
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-##FLL
-#CSI=true
-#g_mf=g
-#r=r_off_ft[:,0]
-#x_out=FLL(r,g_mf,n_up)
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Plot.konstellation(r_mf,'Signal after FLL')
 #Plot.timesignal(r_mf,'Signal after FLL')

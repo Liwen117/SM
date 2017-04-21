@@ -37,7 +37,7 @@ class receiver():
         #turn index bits to the Antenne index 
          
         group_delay = (self.MF_ir.size - 1) // 2
-        print("delay=",group_delay)
+        #print("delay=",group_delay)
         c=s_a_index[0:group_delay]
         d=s_a_index[-group_delay:]
 #?      c=np.zeros(group_delay)
@@ -56,15 +56,16 @@ class receiver():
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     def Matched_Filter(self,r_BB):
-#        group_delay = (self.MF_ir.size - 1) // 2
+        #group_delay = (self.MF_ir.size - 1) // 2
+        #r=np.zeros((r_BB.shape[0]+self.MF_ir.size-1-4*group_delay,r_BB.shape[1]),complex)
         r=np.zeros((r_BB.shape[0]+self.MF_ir.size-1,r_BB.shape[1]),complex)
 #        #for each receiver-antenne
         for i in range(0,r_BB.shape[1]):
-#            #a= np.convolve(self.MF_ir, r_BB[:,i])
-#            #r[:,i] = a[ group_delay: - group_delay]
-#            r[:,i]=np.convolve(self.MF_ir, r_BB[:,i])
-#        #without downsampling
+            #a= np.convolve(self.MF_ir, r_BB[:,i])
+            #r[:,i] = a[ 2*group_delay: -2* group_delay]
             r[:,i]=np.convolve(self.MF_ir, r_BB[:,i])
+#        #without downsampling
+#            r[:,i]=np.convolve(self.MF_ir, r_BB[:,i])
         return r
         #with downsampling
 #        r_down = r[::self.sps]

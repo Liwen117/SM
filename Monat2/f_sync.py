@@ -93,54 +93,110 @@ def NDA(r,M,T,H,n_up):
 #kommentar: funktioniert nur bei sehr hohem SNR
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-def FLL(r,g_mf,n_up): 
-    k = np.arange(np.ceil(-len(g_mf)/2),np.floor(len(g_mf)/2)+1) 
-    T=1 
-    g_dmf= 2*np.pi*T*k[:]*g_mf[:] 
-    # Ausgabe initialisieren 
-    x_out = np.zeros([len(r)/n_up*2,1],complex) 
-    f = 0 
-    # 
-    #Schrittweite 
-    gamma = 0.01 
-    x_buf = np.zeros([len(g_mf)-1],complex) 
-    x_1 = complex(0)
-    y_buf = np.zeros([len(g_dmf)-1],complex)
-    y_1 = complex(0)
-    nu = 0 
-    phi = 0 
-    cnt=0
-    # Phasenkorrektur 
-    for ii in range(0,len(r)): 
-    #Korrektur des Eingangswertes 
-        r[ii] = r[ii] * np.exp(1j*(-phi)) 
- 
-    #neues Phaseninkrement berechnen 
-        phi = phi + 2*np.pi*nu/8000
-
-    #Filteroperationen, MF+DMF 
-        (x,x_buf)=sig.lfilter(g_mf, np.ones(len(g_mf)),[r[ii]],0,x_buf)        
-        (y,y_buf)=sig.lfilter(g_dmf, np.ones(len(g_dmf)),[r[ii]],0,y_buf)
-    #Downsample by 8 
-        if (np.mod(ii,n_up) == 1): 
-    #Fehler berechnen 
-                e = 0.5*np.imag(x_1*np.conj(y_1)) + 0.5*np.imag(x*np.conj(y))
-                nu= nu + gamma*e[0];      
-    #Frequenzoffset berechnen 
-                f=f+nu; 
-   
-        if (np.mod(ii,n_up/2) == 1):     
-            x_1 = x
-            y_1 = y    
-    #Ausgabe, Faktor 2 ueberabgetastet! 
-            x_out[cnt] = x
-            cnt=cnt+1
-
-    print(f/len(r)*n_up) 
-    return x_out 
+#def FLL(r,g_mf,n_up,f): 
+#    k = np.arange(np.ceil(-len(g_mf)/2),np.floor(len(g_mf)/2)+1) 
+#    T=1 
+#    g_dmf= 2*np.pi*T*k[:]*g_mf[:] 
+#    # Ausgabe initialisieren 
+#    x_out = np.zeros([len(r)/n_up*2,1],complex) 
+##    f = 0 
+#    # 
+#    #Schrittweite 
+#    gamma = 0.01 
+#    x_buf = np.zeros([len(g_mf)-1],complex) 
+#    x_1 = complex(0)
+#    y_buf = np.zeros([len(g_dmf)-1],complex)
+#    y_1 = complex(0)
+#    nu = 0 
+#    phi = 0 
+#    cnt=0
+#    # Phasenkorrektur 
+#    for ii in range(0,len(r)): 
+#    #Korrektur des Eingangswertes 
+#        r[ii] = r[ii] * np.exp(1j*(-phi)) 
+# 
+#    #neues Phaseninkrement berechnen 
+#        phi = phi + 2*np.pi*nu/8000
+#
+#    #Filteroperationen, MF+DMF 
+#        (x,x_buf)=sig.lfilter(g_mf, np.ones(len(g_mf)),[r[ii]],0,x_buf)        
+#        (y,y_buf)=sig.lfilter(g_dmf, np.ones(len(g_dmf)),[r[ii]],0,y_buf)
+#    #Downsample by 8 
+#        if (np.mod(ii,n_up) == 1): 
+#    #Fehler berechnen 
+#                e = 0.5*np.imag(x_1*np.conj(y_1)) + 0.5*np.imag(x*np.conj(y))
+#                nu= nu + gamma*e[0];      
+#    #Frequenzoffset berechnen 
+#                f=f+nu; 
+#   
+#        if (np.mod(ii,n_up/2) == 1):     
+#            x_1 = x
+#            y_1 = y    
+#    #Ausgabe, Faktor 2 ueberabgetastet! 
+#            x_out[cnt] = x
+#            cnt=cnt+1
+#
+#    f=f/len(r)*n_up
+#    print(f)
+#    return x_out,f
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+class FLL(): 
+    def __init__(self,g_mf,n_up):
+        k = np.arange(np.ceil(-len(g_mf)/2),np.floor(len(g_mf)/2)+1) 
+        T=1
+ #Schrittweite 
+        self.gamma = 0.01 
+        self.g_mf=g_mf
+        self.n_up=n_up
+        self.g_dmf= 2*np.pi*T*k[:]*g_mf[:] 
+        self.x_buf = np.zeros([len(g_mf)-1],complex) 
+        self.x_1 = complex(0)
+        self.y_buf = np.zeros([len(g_mf)-1],complex)
+        self.y_1 = complex(0)
+        self.nu = 0 
+        self.phi = 0 
+    
+    def recovery(self,r):
+        cnt=0
+        # Ausgabe initialisieren 
+        x_out = np.zeros([len(r)/self.n_up*2,1],complex) 
+        f = 0 
+        # Phasenkorrektur 
+        for ii in range(0,len(r)): 
+        #Korrektur des Eingangswertes 
+            r[ii] = r[ii] * np.exp(1j*(-self.phi)) 
+     
+        #neues Phaseninkrement berechnen 
+            self.phi = self.phi + 2*np.pi*self.nu/8000
+            #print(self.phi)
+        #Filteroperationen, MF+DMF 
+            (x,self.x_buf)=sig.lfilter(self.g_mf, 1,[r[ii]],0,self.x_buf)        
+            (y,self.y_buf)=sig.lfilter(self.g_dmf, 1,[r[ii]],0,self.y_buf)
+            ##tested, gleich wie in MATLAB
+        #Downsample by 8 
+            if (np.mod(ii,self.n_up) ==0 ): 
+        #Fehler berechnen 
+                    e = 0.5*np.imag(self.x_1*np.conj(self.y_1)) + 0.5*np.imag(x*np.conj(y))
+                    #print("e=",e)
+                    self.nu= self.nu + self.gamma*e[0];      
+        #Frequenzoffset berechnen 
+                    f=f+self.nu; 
+       
+            if (np.mod(ii,self.n_up/2) == 0):     
+                self.x_1 = x
+                self.y_1 = y    
+        #Ausgabe, Faktor 2 ueberabgetastet! 
+                x_out[cnt] = x
+                cnt=cnt+1
+        f=f/len(r)*self.n_up
+        print(f)
+        return x_out,f
+    
 
+    
+
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #g_mf=g
 #r=r_off_ft[:,0]
 
