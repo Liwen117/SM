@@ -36,14 +36,14 @@ class receiver():
         s_a_index=np.repeat(bitarray2dec(self.ibits),self.sps)
         #turn index bits to the Antenne index 
          
-        group_delay = (self.MF_ir.size - 1) // 2
-        #print("delay=",group_delay)
-        c=s_a_index[0:group_delay]
-        d=s_a_index[-group_delay:]
-#?      c=np.zeros(group_delay)
-
-        s_a_index=np.concatenate((c,s_a_index,d))
-        self.index=s_a_index
+#        group_delay = (self.MF_ir.size - 1) // 2
+#        #print("delay=",group_delay)
+#        c=s_a_index[0:group_delay]
+#        d=s_a_index[-group_delay:]
+##?      c=np.zeros(group_delay)
+#
+#        s_a_index=np.concatenate((c,s_a_index,d))
+#        self.index=s_a_index
         r=np.zeros((self.s.size,self.H.shape[0]),complex)
         #initiate received signal in Bandpass
         for j in range(0,self.H.shape[0]):

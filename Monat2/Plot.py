@@ -38,7 +38,8 @@ def konstellation(symbol,name):
     
 def timesignal(signal,name):
     plt.figure()
-    n = np.linspace(0, signal.size, signal.size)
+    #n = np.linspace(0, signal.size, signal.size)
+    n = np.linspace(0, len(signal),len(signal) )
     plt.stem(n,signal)
     plt.title(name)
     plt.xlabel("Index");plt.ylabel('signal(t)')

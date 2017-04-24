@@ -13,6 +13,7 @@ from sender import sender
 from receiver import receiver
 import test
 from f_sync import ML_approx_known, ML_unknown, ML_approx_unknown,FLL,NDA
+from takt_synchro import gardner_timing_recovery
 import time
 from commpy.utilities import bitarray2dec 
 import matplotlib.pyplot as plt  
@@ -23,7 +24,7 @@ import Plot
 #carrier Frequency
 fc=5.2*1e9  # IEEE 802.11 WLAN
 offset_range=40*1e-6
-SNR_dB=30
+SNR_dB=50
 #=Eb/N0
 #number of sender antennas
 SA=2
@@ -39,7 +40,7 @@ Ns=100
 Nf=20
 #number of symbols
 N=Ns*Nf
-N=250
+N=128*6
 #number of training symbols
 N_known=0
 #symbol duration
@@ -48,7 +49,7 @@ T=1*1e-3
 #Frequency offset
 f_off=np.random.randint(-fc*offset_range,fc*offset_range)*0.01
 f_off=np.random.randint(-0.1/T,0.1/T)
-f_off=320
+f_off=0
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
 print("f_off=",f_off)
@@ -73,7 +74,8 @@ H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
 f_est=[]
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fl=FLL(g,n_up)
-for i in range(0,250):
+gardner=gardner_timing_recovery(n_up)
+for i in range(0,1):
     #sender
     sender_=sender(N,N_known,Ni,Nd,mpsk_map,filter_)
     #print("n_start=",sender_.n_start)
@@ -87,6 +89,8 @@ for i in range(0,250):
     
     
     s_BB=sender_.bbsignal()
+    group_delay = (g.size - 1) // 2
+    s_BB=s_BB[group_delay:-group_delay]
     
     #spec=sender_.anti_image(s_BB)
     
@@ -101,8 +105,8 @@ for i in range(0,250):
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #with Filter
     receiver_=receiver(H,sender_,SNR_dB,filter_,mpsk_map)
-    group_delay = (g.size - 1) // 2
-    r=receiver_.channel()[group_delay:-group_delay,:]
+    
+    r=receiver_.channel()
     
     #Plot.timesignal(rr,"nach Kanal")
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -125,11 +129,11 @@ for i in range(0,250):
     #with offsets
     #Frequency offset before MF(+filter length) 
     #!!!T anpassen!!!
-    #f_off=0
-    #off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
-    #r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
-    #r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-    
+    f_off=0
+    off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
+    r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
+    r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+    r_mf=r_mf[group_delay:-group_delay]
     
     #Plot.timesignal(r_mf[:,0],"nach MF")
     #Plot.timesignal(r_mf[:n_up],"1. Symbol nach MF")
@@ -162,16 +166,27 @@ for i in range(0,250):
     #FLL
     #CSI=true
     
-    g_mf=g
-    
-    r=r_off_ft[:,0]
-    
-    #for i in range(0,500):
-    #    r=r*np.exp(-1j*2*np.pi*f*np.arange(sender_.bbsignal().size)*T/filter_.n_up)    
-        #print("phi=",fl.phi)
-    x_out,f=fl.recovery(r)
-    f_est.append(f)
-
+#    g_mf=g
+#    
+#    r=r_off_ft[:,0]
+#    
+#    #for i in range(0,500):
+#    #    r=r*np.exp(-1j*2*np.pi*f*np.arange(sender_.bbsignal().size)*T/filter_.n_up)    
+#        #print("phi=",fl.phi)
+#    x_out,f=fl.recovery(r)
+#    f_est.append(f)
+#    
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #Gardner
+    y=r_mf[5:,0]
+    #y=x_out[3:,0]
+    gardner.run(y)
+    r_sync=gardner.output_symbols
+    plt.plot(gardner.e); plt.title("Error signal e"); plt.show();
+    plt.plot([np.rint(tau) for tau in gardner.tau]); plt.title("Estimated timing offset tau"); plt.ylim([-gardner.n_up//2-1, gardner.n_up//2+1]); plt.show();
+    #plt.stem(r[::gardner.n_up]); plt.title("Unsynchronized receive symbols"); plt.show();
+    #plt.stem(r_sync); plt.title("Synchronized receive symbols"); plt.show();    
+        
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Plot.konstellation(r_mf,'Signal after FLL')
