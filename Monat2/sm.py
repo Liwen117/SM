@@ -12,7 +12,7 @@ from rrc import rrcfilter
 from sender import sender
 from receiver import receiver
 import test
-from f_sync import ML_approx_known, ML_unknown, ML_approx_unknown,FLL,NDA
+from f_sync import ML_approx_known, ML_unknown, ML_approx_unknown,FLL,NDA,DC
 from takt_synchro import gardner_timing_recovery
 import time
 from commpy.utilities import bitarray2dec 
@@ -24,7 +24,7 @@ import Plot
 #carrier Frequency
 fc=5.2*1e9  # IEEE 802.11 WLAN
 offset_range=40*1e-6
-SNR_dB=50
+SNR_dB=30
 #=Eb/N0
 #number of sender antennas
 SA=2
@@ -40,16 +40,15 @@ Ns=100
 Nf=20
 #number of symbols
 N=Ns*Nf
-N=128*6
+N=300
 #number of training symbols
-N_known=0
+N_known=256
 #symbol duration
 T=1*1e-3
 #T=1
 #Frequency offset
 f_off=np.random.randint(-fc*offset_range,fc*offset_range)*0.01
 f_off=np.random.randint(-0.1/T,0.1/T)
-f_off=0
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
 print("f_off=",f_off)
@@ -63,9 +62,9 @@ Ni=int(np.log2(SA))
 #number of Data bits per symbol
 Nd=int(np.log2(M))
 #Upsampling rate
-n_up=8
+n_up=4
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
-filter_=rrcfilter(6*n_up+1,n_up , 1,0.35)
+filter_=rrcfilter(6*n_up+1,n_up , 1,1)
 g=filter_.ir()
 #Plot.spectrum(g,"g")
 #Channel matrix
@@ -78,14 +77,14 @@ gardner=gardner_timing_recovery(n_up)
 for i in range(0,1):
     #sender
     sender_=sender(N,N_known,Ni,Nd,mpsk_map,filter_)
-    #print("n_start=",sender_.n_start)
+    print("n_start=",sender_.n_start)
     #training symbols(/bits) which may be shared with receiver, when a data-aided method is used
     symbols_known=sender_.symbols_known
     symbols=sender_.symbols
     ibits=sender_.ibits
-    dbits=sender_.dbits
+#    dbits=sender_.dbits
     ibits_known=sender_.ibits_known
-    dbits_known=sender_.dbits_known
+   # dbits_known=sender_.dbits_known
     
     
     s_BB=sender_.bbsignal()
@@ -129,7 +128,6 @@ for i in range(0,1):
     #with offsets
     #Frequency offset before MF(+filter length) 
     #!!!T anpassen!!!
-    f_off=0
     off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
     r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
     r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
@@ -175,18 +173,48 @@ for i in range(0,1):
 #        #print("phi=",fl.phi)
 #    x_out,f=fl.recovery(r)
 #    f_est.append(f)
-#    
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    #Gardner
-    y=r_mf[5:,0]
-    #y=x_out[3:,0]
-    gardner.run(y)
-    r_sync=gardner.output_symbols
-    plt.plot(gardner.e); plt.title("Error signal e"); plt.show();
-    plt.plot([np.rint(tau) for tau in gardner.tau]); plt.title("Estimated timing offset tau"); plt.ylim([-gardner.n_up//2-1, gardner.n_up//2+1]); plt.show();
-    #plt.stem(r[::gardner.n_up]); plt.title("Unsynchronized receive symbols"); plt.show();
-    #plt.stem(r_sync); plt.title("Synchronized receive symbols"); plt.show();    
-        
+#print(DC(r_mf[:,0],T,dbits_known,M))
+#y=r_mf[:,0]
+#D=8
+#C=np.zeros(y.size,complex)
+#P=np.zeros(y.size,complex)
+#M=np.zeros(y.size,complex)
+#d=np.zeros(y.size+D,complex)
+#for n in range(D+1,y.size-D):
+#    for i in range(0,n-D):
+#            d[i]=symbols[i//n_up]*np.conj(symbols[(i+D)//n_up])
+#            P[n]+=np.abs(y[n-i-D])**2
+#            C[n]+=np.conj(y[n-i])*y[n-i-D]*d[i]
+#            M[n]=np.abs(C[n])/P[n]
+#m=np.argmax(M)
+#f_est=1/(2*np.pi*D*T)*np.angle(C[m])
+#print(f_est,m)
+
+
+#%%%%%%%%%%%%%%%%%
+    r=r_mf[2:]
+    L=N_known
+    Pd = np.asarray([np.sum(np.conj(r[i:i+n_up*L//2:n_up])*r[i+L//2*n_up:i+L*n_up:n_up]) for i in range(len(r)-n_up*L)])
+    Rd = np.asarray([np.sum(np.abs(r[i+L*n_up//2:i+L*n_up:n_up])**2) for i in range(len(r) - L*n_up)])  
+    M = np.abs(Pd/Rd)**2
+    print(np.argmax(M)/n_up)
+    
+    
+    
+    plt.plot(np.abs(M)); plt.ylabel("M"); plt.xlabel("d [Samples]"); plt.xlim([0, len(M)]); plt.ylim([0,1.1]); plt.title("M(d)"); plt.show()
+#    plt.plot(np.angle(Pd)); plt.title("arg(P(d))"); plt.xlabel("Verschiebung"); plt.xlim([0, len(M)]); plt.show()
+        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#    #Gardner
+#    y=r_mf[5:,0]
+#    #y=x_out[3:,0]
+#    gardner.run(y)
+#    r_sync=gardner.output_symbols
+#    plt.plot(gardner.e); plt.title("Error signal e"); plt.show();
+#    plt.plot([np.rint(tau) for tau in gardner.tau]); plt.title("Estimated timing offset tau"); plt.ylim([-gardner.n_up//2-1, gardner.n_up//2+1]); plt.show();
+#    #plt.stem(r[::gardner.n_up]); plt.title("Unsynchronized receive symbols"); plt.show();
+#    #plt.stem(r_sync); plt.title("Synchronized receive symbols"); plt.show();    
+#        
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Plot.konstellation(r_mf,'Signal after FLL')

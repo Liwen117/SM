@@ -16,7 +16,7 @@ class receiver():
         self.H=H
         #self.H_est=H_est
         self.ibits=sender_.ibits
-        self.dbits=sender_.dbits
+#        self.dbits=sender_.dbits
         self.Ni=sender_.Ni
         self.Nd=sender_.Nd
         self.s=sender_.bbsignal()
@@ -67,7 +67,7 @@ class receiver():
 #        #without downsampling
 #            r[:,i]=np.convolve(self.MF_ir, r_BB[:,i])
         return r
-        #with downsampling
+#        #with downsampling
 #        r_down = r[::self.sps]
 #        return r_down
 #    

@@ -148,6 +148,32 @@ class FLL():
    #kommentar: funktioniert, braucht aber viel laengere Konvergenzzeit
    
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+
+#Modified delay correlation
+def DC(y,T,p,M):
+    D=int(p.size/np.log2(M))
+    D=8
+    C=np.zeros(y.size,complex)
+    P=np.zeros(y.size,complex)
+    M=np.zeros(y.size,complex)
+
+    for n in range(D+1,y.size):
+        for i in range(0,n-D):
+                #d[i]=p[i]*np.conj(p[i])
+                P[n]+=np.abs(y[n-i-D])**2
+                C[n]+=np.conj(y[n-i])*y[n-i-D]
+                M[n]=np.abs(C[n])/P[n]
+    m=np.argmax(M)
+    f_est=1/(2*np.pi*D*T)*np.angle(C[m])
+
+    return f_est,m
+            
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+def FLC(r,L): 
+            
+    Pd = np.asarray([np.sum(np.conj(r[i:i+L//2])*r[i+L//2:i+L]) for i in range(len(r)-L)])
+    Rd = np.asarray([np.sum(np.abs(r[i+L//2:i+L])**2) for i in range(len(r) - L)])
+    M = np.abs(Pd/Rd)**2
+
 
 

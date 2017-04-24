@@ -36,4 +36,4 @@ class gardner_timing_recovery:
     ##Kommentar: Gardner funktioniert nicht bei SM (bzw. nur wenn Kanalkoeffiziente aehnlich sind)
     
 class STR:
-    
+    pass    
