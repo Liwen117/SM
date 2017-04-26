@@ -150,16 +150,37 @@ class FLL():
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #Modified delay correlation
-def DC(r,T,symbols_known,n_up,L):
-    d=np.asarray([symbols_known[np.mod(i,L//4)]*np.conj(symbols_known[np.mod(i,L//4)+L//4]) for i in range(len(r)-n_up*L//2)])
-    Pd = np.asarray([np.sum(np.conj(r[i:i+n_up*L//4:n_up])*r[i+L//4*n_up:i+L//2*n_up:n_up]*d[i]) for i in range(len(r)-n_up*L//2)])
-    Rd = np.asarray([np.sum(np.abs(r[i+L*n_up//4:i+L//2*n_up:n_up])**2) for i in range(len(r) - L//2*n_up)])  
+def DC(r,T,symbols_known,n_up,L,k):
+    #k= Anzahl der Wiederholungen, L//k=Fensterlaenge 
+    d=np.asarray([symbols_known[np.mod(i,L//k)]*np.conj(symbols_known[np.mod(i,L//k)+L//k]) for i in range(len(r)-n_up*L//k*2)])
+    Pd = np.asarray([np.sum(np.conj(r[i:i+n_up*L//k:n_up])*r[i+L//k*n_up:i+L//k*2*n_up:n_up]*d[i]) for i in range(len(r)-n_up*L//k*2)])
+    Rd = np.asarray([np.sum(np.abs(r[i+L*n_up//k:i+L//k*2*n_up:n_up])**2) for i in range(len(r) - L//k*2*n_up)])  
     M = np.abs(Pd/Rd)**2
-    #plt.plot(Pd)
-    #plt.plot(Rd)
-    plt.plot(M)
-    f_est=1/(2*np.pi*L//4*T)*np.angle(Pd[np.argmax(M)])
-    return f_est,np.argmax(M)/n_up
+#    plt.plot(Pd)
+#    plt.plot(Rd)
+    plt.figure()    
+    plt.stem(M)
+#    np.argmax(M)/n_up
+    f_est=1/(2*np.pi*L//k*T)*np.angle(Pd[np.argmax(M)])
+    plt.figure()
+    plt.plot(1/(2*np.pi*L//k*T)*np.angle(Pd))
+    m=-1
+    #f_est=-1
+    cnt=0
+    if(np.count_nonzero(M>np.max(M)*0.5) > L//8*6*n_up*0.1):            
+        for i in range(0,M.size-n_up*L//k*(k-2)):
+            if (np.count_nonzero(M[i:i+L//k*(k-1)*n_up:k*n_up]>0.7)>=k-1 and np.count_nonzero(M[i:i+L//k*(k-2)*n_up:k*n_up]>0.9*np.max(M))>0):
+                #threshold soll auf SNR angepasst werden
+                m+=i/n_up               
+                #f_est=1/(2*np.pi*L//k*T)*np.angle(Pd[i+4*L//k*n_up])
+                cnt+=1
+        if cnt==0:
+            m=-1
+        else:
+            m=m/cnt
+            f_est=1/(2*np.pi*L//k*T)*np.angle(Pd[int(m*n_up+1.5*k*n_up)])   
+            print(m+1.5*k*n_up)
+    return f_est,m,M
             
 
 

@@ -21,14 +21,16 @@ from joint_estimation import joint_estimation
 import scipy.linalg as lin
 import scipy.signal as sig
 import Plot
+import commpy
+#commpy.zcsequence(2,8)
 #carrier Frequency
 fc=1*1e9  # LTE
 offset_range=40*1e-6
 print("f_max=",fc*offset_range)
-SNR_dB=50
+SNR_dB=10
 #=Eb/N0
 #number of sender antennas
-SA=8
+SA=2
 #number of receiver antennas
 RA=1
 #data bits modulation order (BPSK)
@@ -42,16 +44,16 @@ Ns=2
 Nf=100
 #number of symbols
 N=Ns*Nf
-N=128
 #number of training symbols
-N_known=64
+N_known=64*4
+N=N_known*2
+k=8
 #symbol duration
 T=1*1e-6
-print("f_vernachlaessigbar=",0.01/T)
+#print("f_vernachlaessigbar=",0.01/N/T)
 #T=1
 #Frequency offset
-f_off=np.random.randint(-fc*offset_range,fc*offset_range)
-
+f_off=np.random.randint(-fc*offset_range,fc*offset_range)*0.1
 #f_off=np.random.randint(-0.01/T,0.01/T)
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
@@ -66,13 +68,15 @@ Ni=int(np.log2(SA))
 #number of Data bits per symbol
 Nd=int(np.log2(M))
 #Upsampling rate
-n_up=10
+n_up=8
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
-filter_=rrcfilter(6*n_up+1,n_up , 1,0)
+K=6
+filter_=rrcfilter(K*n_up+1,n_up , 1,1)
 g=filter_.ir()
 #Plot.spectrum(g,"g")
 #Channel matrix
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
+#H=np.array([[0.5,0.1]])
 #H=np.ones([RA,SA])
 f_est=[]
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,8 +84,8 @@ fl=FLL(g,n_up)
 gardner=gardner_timing_recovery(n_up)
 for i in range(0,1):
     #sender
-    sender_=sender(N,N_known,Ni,Nd,mpsk_map,filter_)
-    print("n_start=",sender_.n_start)
+    sender_=sender(N,N_known,Ni,Nd,mpsk_map,filter_,k)
+    print("n_start=",sender_.n_start,sender_.n_start*n_up,(sender_.n_start+N_known)*n_up)
     #training symbols(/bits) which may be shared with receiver, when a data-aided method is used
     symbols_known=sender_.symbols_known
     #symbols_known=ss
@@ -89,6 +93,7 @@ for i in range(0,1):
     ibits=sender_.ibits
 #    dbits=sender_.dbits
     ibits_known=sender_.ibits_known
+    index=bitarray2dec(ibits_known)
    # dbits_known=sender_.dbits_known
     
     
@@ -110,8 +115,8 @@ for i in range(0,1):
     #with Filter
     receiver_=receiver(H,sender_,SNR_dB,filter_,mpsk_map)
     
-    r=receiver_.channel()
-    
+    r=receiver_.r
+    rr=receiver_.r
     #Plot.timesignal(rr,"nach Kanal")
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #Plot.konstellation(r,'Signal after channel')
@@ -119,10 +124,10 @@ for i in range(0,1):
     #Plot.spectrum(r,'Signal after channel')
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    off=np.exp(1j*2*np.pi*f_off*np.arange(r.shape[0])*T/filter_.n_up)
-    r_off_ft=r*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
-    
-    
+#    off=np.exp(1j*2*np.pi*f_off*np.arange(r.shape[0])*T/filter_.n_up)
+#    r_off_ft=r*np.repeat(off,RA).reshape([-1,RA])*np.exp(1j*phi_off)
+#    
+#    
     
     #sp=np.fft.fft(r)
     #yi,yd=receiver_.detector(r_mf,H)
@@ -133,10 +138,11 @@ for i in range(0,1):
     #with offsets
     #Frequency offset before MF(+filter length) 
     #!!!T anpassen!!!
-    off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/filter_.n_up)
-    r=receiver_.channel()*np.repeat(off,RA).reshape([-1,RA])
-    r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-    r_mf=r_mf[2*group_delay:-2*group_delay]
+    off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/n_up)
+    r=receiver_.r*np.repeat(off,RA).reshape([-1,RA])
+    r_mf1=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+    r_mf=r_mf1[2*group_delay:-2*group_delay]
+
 
     #Plot.timesignal(r_mf[:,0],"nach MF")
     #Plot.timesignal(r_mf[:n_up],"1. Symbol nach MF")
@@ -199,7 +205,11 @@ for i in range(0,1):
 
 #%%%%%%%%%%%%%%%%%
 #Modified Delay Correlation
-    f_est,m=DC(r_mf,T,symbols_known,n_up,N_known)
+    f_est,m,M=DC(r_mf,T,symbols_known,n_up,N_known,k)
+#    if m==-1:
+#        break
+        #Schätzung fehlerbehaftet, kein ACK fuer Sender, Kanalschätzung wird nicht eingeschalten. 
+        #das gleiche Frame wird noch mal gesendet werden.
 #    r=r_mf
 #    L=N_known
 #    Pd = np.asarray([np.sum(np.conj(r[i:i+n_up*L//2:n_up])*r[i+L//2*n_up:i+L*n_up:n_up]*symbols_known[np.mod(i,L//2)]*np.conj(symbols_known[np.mod(i,L//2)+L//2]) ) for i in range(len(r)-n_up*L)])
@@ -214,6 +224,27 @@ for i in range(0,1):
 #    plt.plot(np.abs(M)); plt.ylabel("M"); plt.xlabel("d [Samples]"); plt.xlim([0, len(M)]); plt.ylim([0,1.1]); plt.title("M(d)"); plt.show()
 #    plt.plot(np.angle(Pd)); plt.title("arg(P(d))"); plt.xlabel("Verschiebung"); plt.xlim([0, len(M)]); plt.show()
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+#Frequency synchronisation
+    y=r_mf*np.exp(-1j*2*np.pi*f_est*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up).reshape([-1,RA])
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    #Early-Late
+    diff=2
+    if m>10:
+        abweichung =10
+    else:
+        abweichung = m
+    
+    #y=y[n_up*(m-abweichung):]
+    
+    for i in range(0,len(r_mf)):
+        
+
+        pass
+        
+        
+        
+        #%%%%%%%%%%%%%%%%%
 #    #Gardner
 #    y=r_mf[5:,0]
 #    #y=x_out[3:,0]
@@ -299,10 +330,4 @@ for i in range(0,1):
 #print("f_est=",f_est,", n_est=",n_est," , H_diff_max=", np.max(H-H_est))  
 #print("BER for index bits=",BERi,", BER for data bits=",BERd)  
 ###
-
-
-
-
-
-
 

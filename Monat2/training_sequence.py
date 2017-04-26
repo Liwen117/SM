@@ -40,12 +40,28 @@ def training_symbols(N,Nd,Ni):
     return ibits,dbits
 #
 #ib,db=training_symbols(32,1,2)
-def sc(L,Ni):
-    pn1 = np.random.choice([-1, 1], L//8) # erste PN Sequenz -sqrt(2) oder +sqrt(2)
-    pn1=[-1,1,1,-1,1,1,1,1]
+def sc(L,Ni,k):
+
+    pn2 = np.random.choice([-1, 1], 4) 
+    pn1=[1,1,1,-1,-1,1,1,1]
+    #k-1 Peaks
+#    pn1=[1,1,-1,-1,1,1,-1,-1,1,1,-1,-1,1,1,-1,-1]#Plateau
+    #pn1=[1,1,-1,-1]#2 Plateau mit ein Peak in der Mitte;
+    #pn2=[1,-1,1,-1,1,-1,1,-1,1,-1,1,-1,1,-1,1,-1]
+    #pn1=[1,-1,1,-1]
 #    pn2 = np.random.choice([-1, 1], L)  # zweite PN Sequenz -1 oder +1
-    s1=np.concatenate((pn1,pn1,pn1,pn1,pn1,pn1,pn1,pn1))
-#    s2=pn2
-#    s = np.concatenate((s1, s2))
-    ibits=np.random.choice([0],L*Ni).reshape((Ni,-1))
+    #s1=np.concatenate((pn1,pn1,pn1,pn1,pn1,pn1,pn1,pn1))
+    s1=np.repeat(pn1,L//len(pn1))
+    s2=np.repeat(pn2,L//len(pn2)/2)
+#    s = np.concatenate((s1, s1))
+#    ibits=np.random.choice([0],L*Ni).reshape((Ni,-1))
+    index=np.array([1,1,0,0,1,1,0,0])
+    index=[0]
+#    index=np.array([0,0,1,1,2,2,3,3])
+    index=np.repeat(index,L//len(index))
+    ibits=np.zeros((Ni,index.size))
+    for i in range(0,index.size):
+        ibits[:,i]=dec2bitarray(int(index[i]),Ni)
+    #plt.plot(index)
+#    ibits=np.random.choice([0,1],L//k*Ni).reshape((Ni,-1)).repeat(k,1)
     return ibits,s1

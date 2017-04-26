@@ -10,7 +10,7 @@ from commpy.utilities import bitarray2dec
 import training_sequence as tr
 
 class sender():
-    def __init__(self,N_simu,N,Ni,Nd,mapp,filter_):
+    def __init__(self,N_simu,N,Ni,Nd,mapp,filter_,k):
         self.N_simu=N_simu
         self.N=N
         self.Ni=Ni
@@ -22,15 +22,15 @@ class sender():
         #self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
         self.n_start=np.random.randint(0,N_simu-N)      
 #        self.n_start=17
-        self.generate_simu_bits(N_simu,N,Nd,Ni)
+        self.generate_simu_bits(N_simu,N,Nd,Ni,k)
         self.bbsignal()
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    def generate_simu_bits(self,N_simu,N,Nd,Ni):
+    def generate_simu_bits(self,N_simu,N,Nd,Ni,k):
 
 #Normal Mode
         #self.ibits_known,self.dbits_known=tr.training_symbols(N,Nd,Ni)
 #Schmidl & Cox BPSK
-        self.ibits_known,self.symbols_known=tr.sc(N,Ni)
+        self.ibits_known,self.symbols_known=tr.sc(N,Ni,k)
         self.ibits=np.concatenate((np.random.choice([0],self.n_start*Ni).reshape((Ni,-1)),self.ibits_known,np.random.choice([0],(N_simu-self.n_start-N)*Ni).reshape((Ni,-1))),1 )     
 #        dbits=np.concatenate((np.random.choice([0,1],self.n_start*Nd).reshape((Nd,-1)),self.dbits_known,np.random.choice([0,1],(N_simu-self.n_start-N)*Nd).reshape((Nd,-1))),1 )
         #return ibits,dbits
