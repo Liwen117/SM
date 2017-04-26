@@ -8,6 +8,7 @@ Created on Wed Mar 15 17:56:21 2017
 import numpy as np  
 from commpy.utilities import bitarray2dec
 import training_sequence as tr
+
 class sender():
     def __init__(self,N_simu,N,Ni,Nd,mapp,filter_):
         self.N_simu=N_simu
@@ -30,7 +31,7 @@ class sender():
         #self.ibits_known,self.dbits_known=tr.training_symbols(N,Nd,Ni)
 #Schmidl & Cox BPSK
         self.ibits_known,self.symbols_known=tr.sc(N,Ni)
-        self.ibits=np.concatenate((np.random.choice([0,1],self.n_start*Ni).reshape((Ni,-1)),self.ibits_known,np.random.choice([0,1],(N_simu-self.n_start-N)*Ni).reshape((Ni,-1))),1 )     
+        self.ibits=np.concatenate((np.random.choice([0],self.n_start*Ni).reshape((Ni,-1)),self.ibits_known,np.random.choice([0],(N_simu-self.n_start-N)*Ni).reshape((Ni,-1))),1 )     
 #        dbits=np.concatenate((np.random.choice([0,1],self.n_start*Nd).reshape((Nd,-1)),self.dbits_known,np.random.choice([0,1],(N_simu-self.n_start-N)*Nd).reshape((Nd,-1))),1 )
         #return ibits,dbits
     

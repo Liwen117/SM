@@ -10,7 +10,7 @@ Created on Thu Mar 16 11:17:55 2017
 #optimal detector
 import numpy as np
 from commpy.utilities import bitarray2dec
-
+import matplotlib.pyplot as plt
 class receiver():
     def __init__(self,H,sender_,SNR_dB,filter_,mapp):
         self.H=H
@@ -52,6 +52,7 @@ class receiver():
                 r[i,j]=self.s[i]*self.H[j,s_a_index[i]]
                 r[:,j]=r[:,j]+n
         self.r=r
+        #plt.plot(n)
         return r
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

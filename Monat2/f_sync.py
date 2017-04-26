@@ -150,30 +150,18 @@ class FLL():
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #Modified delay correlation
-def DC(y,T,p,M):
-    D=int(p.size/np.log2(M))
-    D=8
-    C=np.zeros(y.size,complex)
-    P=np.zeros(y.size,complex)
-    M=np.zeros(y.size,complex)
-
-    for n in range(D+1,y.size):
-        for i in range(0,n-D):
-                #d[i]=p[i]*np.conj(p[i])
-                P[n]+=np.abs(y[n-i-D])**2
-                C[n]+=np.conj(y[n-i])*y[n-i-D]
-                M[n]=np.abs(C[n])/P[n]
-    m=np.argmax(M)
-    f_est=1/(2*np.pi*D*T)*np.angle(C[m])
-
-    return f_est,m
-            
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-def FLC(r,L): 
-            
-    Pd = np.asarray([np.sum(np.conj(r[i:i+L//2])*r[i+L//2:i+L]) for i in range(len(r)-L)])
-    Rd = np.asarray([np.sum(np.abs(r[i+L//2:i+L])**2) for i in range(len(r) - L)])
+def DC(r,T,symbols_known,n_up,L):
+    d=np.asarray([symbols_known[np.mod(i,L//4)]*np.conj(symbols_known[np.mod(i,L//4)+L//4]) for i in range(len(r)-n_up*L//2)])
+    Pd = np.asarray([np.sum(np.conj(r[i:i+n_up*L//4:n_up])*r[i+L//4*n_up:i+L//2*n_up:n_up]*d[i]) for i in range(len(r)-n_up*L//2)])
+    Rd = np.asarray([np.sum(np.abs(r[i+L*n_up//4:i+L//2*n_up:n_up])**2) for i in range(len(r) - L//2*n_up)])  
     M = np.abs(Pd/Rd)**2
+    #plt.plot(Pd)
+    #plt.plot(Rd)
+    plt.plot(M)
+    f_est=1/(2*np.pi*L//4*T)*np.angle(Pd[np.argmax(M)])
+    return f_est,np.argmax(M)/n_up
+            
+
 
 
 
