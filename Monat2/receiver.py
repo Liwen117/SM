@@ -66,10 +66,11 @@ class receiver():
             r[:,i]=np.convolve(self.MF_ir, r_BB[:,i])
 #        #without downsampling
 #            r[:,i]=np.convolve(self.MF_ir, r_BB[:,i])
+        self.r_down = r[::self.sps]
+
         return r
 #        #with downsampling
-#        r_down = r[::self.sps]
-#        return r_down
+
 #    
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

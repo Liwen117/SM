@@ -22,12 +22,12 @@ import scipy.linalg as lin
 import scipy.signal as sig
 import Plot
 #carrier Frequency
-fc=5.2*1e9  # IEEE 802.11 WLAN
+fc=1*1e9  # LTE
 offset_range=40*1e-6
-SNR_dB=30
+SNR_dB=20
 #=Eb/N0
 #number of sender antennas
-SA=2
+SA=8
 #number of receiver antennas
 RA=1
 #data bits modulation order (BPSK)
@@ -40,15 +40,15 @@ Ns=100
 Nf=20
 #number of symbols
 N=Ns*Nf
-N=300
+N=200
 #number of training symbols
-N_known=256
+N_known=64
 #symbol duration
-T=1*1e-3
+T=1*1e-8
 #T=1
 #Frequency offset
-f_off=np.random.randint(-fc*offset_range,fc*offset_range)*0.01
-f_off=np.random.randint(-0.1/T,0.1/T)
+f_off=np.random.randint(-fc*offset_range,fc*offset_range)
+#f_off=np.random.randint(-0.01/T,0.01/T)
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
 print("f_off=",f_off)
@@ -62,7 +62,7 @@ Ni=int(np.log2(SA))
 #number of Data bits per symbol
 Nd=int(np.log2(M))
 #Upsampling rate
-n_up=4
+n_up=1
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
 filter_=rrcfilter(6*n_up+1,n_up , 1,1)
 g=filter_.ir()
@@ -80,6 +80,7 @@ for i in range(0,1):
     print("n_start=",sender_.n_start)
     #training symbols(/bits) which may be shared with receiver, when a data-aided method is used
     symbols_known=sender_.symbols_known
+    #symbols_known=ss
     symbols=sender_.symbols
     ibits=sender_.ibits
 #    dbits=sender_.dbits
@@ -193,16 +194,17 @@ for i in range(0,1):
 
 
 #%%%%%%%%%%%%%%%%%
-    r=r_mf[2:]
+    r=r_mf
     L=N_known
-    Pd = np.asarray([np.sum(np.conj(r[i:i+n_up*L//2:n_up])*r[i+L//2*n_up:i+L*n_up:n_up]) for i in range(len(r)-n_up*L)])
+    Pd = np.asarray([np.sum(np.conj(r[i:i+n_up*L//2:n_up])*r[i+L//2*n_up:i+L*n_up:n_up]*symbols_known[np.mod(i,L//2)]*np.conj(symbols_known[np.mod(i,L//2)+L//2]) ) for i in range(len(r)-n_up*L)])
     Rd = np.asarray([np.sum(np.abs(r[i+L*n_up//2:i+L*n_up:n_up])**2) for i in range(len(r) - L*n_up)])  
     M = np.abs(Pd/Rd)**2
     print(np.argmax(M)/n_up)
+    #plt.plot(M)
+    f_est=1/(2*np.pi*L//2*T)*np.angle(Pd[np.argmax(M)])
     
-    
-    
-    plt.plot(np.abs(M)); plt.ylabel("M"); plt.xlabel("d [Samples]"); plt.xlim([0, len(M)]); plt.ylim([0,1.1]); plt.title("M(d)"); plt.show()
+    print(f_est)
+#    plt.plot(np.abs(M)); plt.ylabel("M"); plt.xlabel("d [Samples]"); plt.xlim([0, len(M)]); plt.ylim([0,1.1]); plt.title("M(d)"); plt.show()
 #    plt.plot(np.angle(Pd)); plt.title("arg(P(d))"); plt.xlabel("Verschiebung"); plt.xlim([0, len(M)]); plt.show()
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #    #Gardner

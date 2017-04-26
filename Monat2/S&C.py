@@ -8,7 +8,7 @@ Created on Wed Apr 26 16:00:06 2017
 import numpy as np
 import matplotlib.pyplot as plt 
 
-L = 128   # Anzahl Punkte in der DFT
+L = 64   # Anzahl Punkte in der DFT
 pn1 = np.random.choice([-np.sqrt(2), np.sqrt(2)], L//2) # erste PN Sequenz -sqrt(2) oder +sqrt(2)
 pn2 = np.random.choice([-1, 1], L)  # zweite PN Sequenz -1 oder +1
 s1=np.concatenate((pn1,pn1))

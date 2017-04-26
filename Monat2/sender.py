@@ -44,9 +44,9 @@ class sender():
 #        self.dbits= dbits
 #        self.ibits= ibits
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
-    def databits_mapping(self,Ni,N_simu,N):
-        indices1=bitarray2dec(np.random.choice([0,1],self.n_start*Ni).reshape((Ni,-1)))
-        indices2=bitarray2dec(np.random.choice([0,1],(N_simu-self.n_start-N)*Ni).reshape((Ni,-1)))
+    def databits_mapping(self,Nd,N_simu,N):
+        indices1=bitarray2dec(np.random.choice([0,1],self.n_start*Nd).reshape((Nd,-1)))
+        indices2=bitarray2dec(np.random.choice([0,1],(N_simu-self.n_start-N)*Nd).reshape((Nd,-1)))
         #self.symbols_known=self.mapp[bitarray2dec(self.dbits_known) ]
         self.symbols=np.concatenate((self.mapp[indices1],self.symbols_known,self.mapp[indices2]))
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
@@ -81,7 +81,7 @@ class sender():
 
     def bbsignal(self):
         #self.divide_index_data_bits()
-        self.databits_mapping(self.Ni,self.N_simu,self.N)
+        self.databits_mapping(self.Nd,self.N_simu,self.N)
         s_BBr=self.databits_pulseforming(np.real(self.symbols))
         s_BBi=self.databits_pulseforming(np.imag(self.symbols))
         return s_BBr+1j*s_BBi
