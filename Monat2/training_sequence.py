@@ -44,6 +44,7 @@ def sc(L,Ni,k):
 
     pn2 = np.random.choice([-1, 1], 4) 
     pn1=[1,1,1,-1,-1,1,1,1]
+    #pn1=[1,1,1,-1,-1,1,1,-1] #ein Plateau+5 Peaks
     #k-1 Peaks
 #    pn1=[1,1,-1,-1,1,1,-1,-1,1,1,-1,-1,1,1,-1,-1]#Plateau
     #pn1=[1,1,-1,-1]#2 Plateau mit ein Peak in der Mitte;

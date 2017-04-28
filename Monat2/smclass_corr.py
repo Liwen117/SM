@@ -55,7 +55,7 @@ def sm(SNR_dB):
     #f_off=np.random.randint(-0.01/T,0.01/T)
     #N_known=int(1//T//f_off/4)
     #N=10*N_known
-    print("f_off=",f_off)
+#    print("f_off=",f_off)
     #symbol offset 
     #n_off=2
     #phase offset
@@ -79,11 +79,11 @@ def sm(SNR_dB):
     MSE_n=[]
     MSE_f=[]
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    tries=1
+    tries=200
     for i in range(0,tries):
         #sender
         sender_=sender(N,N_known,Ni,Nd,mpsk_map,filter_,k)
-        print("n_start=",sender_.n_start,sender_.n_start*n_up,(sender_.n_start+N_known)*n_up)
+#        print("n_start=",sender_.n_start,sender_.n_start*n_up,(sender_.n_start+N_known)*n_up)
         #training symbols(/bits) which may be shared with receiver, when a data-aided method is used
         symbols_known=sender_.symbols_known
         #symbols_known=ss
@@ -121,9 +121,9 @@ def sm(SNR_dB):
     #Modified Delay Correlation
         f_est,n_est,M=DC(r_mf,T,symbols_known,n_up,N_known,k)
 
-        print("n_est=",n_est)
-# 
-        print("f_est=",f_est)
+#        print("n_est=",n_est)
+## 
+#        print("f_est=",f_est)
 
             #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -131,8 +131,10 @@ def sm(SNR_dB):
 #        y=r_mf*np.exp(-1j*2*np.pi*f_off*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up).reshape([-1,RA])
         
                 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#MSE
-        MSE_n.append((sender_.n_start-n_est)**2)
-        MSE_f.append((f_off-f_est)**2)
+##MSE
+#    MSE_n.append((sender_.n_start-n_est)**2)
+#    MSE_f.append((f_off-f_est)**2)
+    MSE_n.append((sender_.n_start-n_est))
+    MSE_f.append((f_off-f_est)/f_off)
         
-        return np.average(MSE_n), np.average(MSE_f)
+    return np.average(MSE_n), np.average(MSE_f)

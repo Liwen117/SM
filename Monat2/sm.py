@@ -6,18 +6,32 @@ Created on Wed Mar 15 14:25:31 2017
 
 @author: Liwen 
 """
-
-f_sync
-threshold nicht nur nach oben sonder auch nach unten!
-
+#
+#f_sync
+#threshold nicht nur nach oben sonder auch nach unten!
+import numpy as np   
+from rrc import rrcfilter 
+from sender import sender 
+from receiver import receiver 
+#import test 
+from f_sync import DC 
+from takt_synchro import gardner_timing_recovery 
+#import time 
+from commpy.utilities import bitarray2dec  
+import matplotlib.pyplot as plt   
+#from joint_estimation import joint_estimation 
+#import scipy.linalg as lin 
+#import scipy.signal as sig 
+#import Plot 
+#import commpy
 
 
 #commpy.zcsequence(2,8)
 #carrier Frequency
 fc=1*1e9  # LTE
-offset_range=40*1e-6
+offset_range=15*1e-6
 print("f_max=",fc*offset_range)
-SNR_dB=0
+SNR_dB=10
 #=Eb/N0
 #number of sender antennas
 SA=2
@@ -36,14 +50,14 @@ Nf=100
 N=Ns*Nf
 #number of training symbols
 N_known=64*4
-N=N_known*2
+N=N_known*4
 k=8
 #symbol duration
 T=1*1e-6
 #print("f_vernachlaessigbar=",0.01/N/T)
 #T=1
 #Frequency offset
-f_off=np.random.randint(-fc*offset_range,fc*offset_range)*0.1
+f_off=np.random.randint(-fc*offset_range,fc*offset_range)
 #f_off=np.random.randint(-0.01/T,0.01/T)
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
@@ -59,18 +73,20 @@ Ni=int(np.log2(SA))
 Nd=int(np.log2(M))
 #Upsampling rate
 n_up=8
+takt_off=np.random.randint(1,n_up)
+print("takt_off=",takt_off)
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
-K=20
-filter_=rrcfilter(K*n_up+1,n_up , 1,0.5)
+K=40
+filter_=rrcfilter(K*n_up+1,n_up , 1,1)
 g=filter_.ir()
 #Plot.spectrum(g,"g")
 #Channel matrix
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
 #H=np.array([[0.5,0.1]])
-H=np.ones([RA,SA])
+#H=np.ones([RA,SA])
 f_est=[]
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-fl=FLL(g,n_up)
+#fl=FLL(g,n_up)
 gardner=gardner_timing_recovery(n_up)
 for i in range(0,1):
     #sender
@@ -216,29 +232,30 @@ for i in range(0,1):
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #Frequency synchronisation
-    y=r_mf*np.exp(-1j*2*np.pi*f_off*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up).reshape([-1,RA])
+    yy=r_mf*np.exp(-1j*2*np.pi*f_off*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up).reshape([-1,RA])
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    #Early-Late
-    diff=2
-    if m>10:
-        abweichung =10
-    else:
-        abweichung = m
+#Takt synchorinisation
+    takt=np.zeros(n_up)
+    y=yy[takt_off:]
+    for i in range(0,y.size-2):
+        if(np.abs( np.real(y[i+2]-y[i]))< np.abs(np.real(y[i+1]-y[i]))):
+           takt[np.mod(i,n_up)]+=1
+    print("takt_est=",n_up-1-np.argmax(takt))
+    ##Kommentar: braucht kein Vorwissen aber laengere Beobachtung
+    #ABER! Nach der Preamble fuer Sync kommt es Preamble zur Kanalschaetzung
+    #??????
     
-    #y=y[n_up*(m-abweichung):]
-    
-    for i in range(0,len(r_mf)):
+
         
 
-        pass
-        
+    
         
         
         #%%%%%%%%%%%%%%%%%
 #    #Gardner
 #    y=r_mf[5:,0]
 #    #y=x_out[3:,0]
-#    gardner.run(y)
+#    gardner.run(y[:,0])
 #    r_sync=gardner.output_symbols
 #    plt.plot(gardner.e); plt.title("Error signal e"); plt.show();
 #    plt.plot([np.rint(tau) for tau in gardner.tau]); plt.title("Estimated timing offset tau"); plt.ylim([-gardner.n_up//2-1, gardner.n_up//2+1]); plt.show();
