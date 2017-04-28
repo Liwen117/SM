@@ -6,8 +6,10 @@ Created on Tue Apr 11 21:32:50 2017
 @author: Liwen
 """
 import numpy as np
-from sm_class import sm
+#from sm_class import sm
+import smclass_corr as sm
 import matplotlib.pyplot as plt
+
      #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
      #BER-SNR
 def BER_SNR(SNR_range):
@@ -60,4 +62,20 @@ def STR(signal,name):
     plt.semilogy(f, SIGNAL)
     plt.xlim(-0.5, 0.5)
     plt.xlabel("f/B")
-    plt.title(name);    
+    plt.title(name);   
+    
+    
+def MSE_SNR(SNR_range):
+    MSE_n=np.zeros(SNR_range.size)
+    MSE_f=np.zeros(SNR_range.size)
+    for i in range(0,SNR_range.size):
+        MSE_n[i],MSE_f[i]=sm.sm(SNR_range[i])
+#    plt.figure()
+#    plt.plot(MSE_n)
+#    
+#    plt.figure()
+#    plt.plot(MSE_f)   
+    return MSE_n,MSE_f
+
+
+MSE_n, MSE_f=MSE_SNR(np.arange(20,21))

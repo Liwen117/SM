@@ -19,3 +19,5 @@ def BER(yi,yd,Ni,Nd,ibits,dbits):
     berd=np.sum(np.not_equal(xd.reshape((1,-1)),np.matrix(dbits).H.reshape((1,-1))))/xd.size 
     return beri, berd
 
+
+

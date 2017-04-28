@@ -7,27 +7,17 @@ Created on Wed Mar 15 14:25:31 2017
 @author: Liwen 
 """
 
-import numpy as np  
-from rrc import rrcfilter
-from sender import sender
-from receiver import receiver
-import test
-from f_sync import ML_approx_known, ML_unknown, ML_approx_unknown,FLL,NDA,DC
-from takt_synchro import gardner_timing_recovery
-import time
-from commpy.utilities import bitarray2dec 
-import matplotlib.pyplot as plt  
-from joint_estimation import joint_estimation
-import scipy.linalg as lin
-import scipy.signal as sig
-import Plot
-import commpy
+f_sync
+threshold nicht nur nach oben sonder auch nach unten!
+
+
+
 #commpy.zcsequence(2,8)
 #carrier Frequency
 fc=1*1e9  # LTE
 offset_range=40*1e-6
 print("f_max=",fc*offset_range)
-SNR_dB=10
+SNR_dB=0
 #=Eb/N0
 #number of sender antennas
 SA=2
@@ -70,14 +60,14 @@ Nd=int(np.log2(M))
 #Upsampling rate
 n_up=8
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
-K=6
-filter_=rrcfilter(K*n_up+1,n_up , 1,1)
+K=20
+filter_=rrcfilter(K*n_up+1,n_up , 1,0.5)
 g=filter_.ir()
 #Plot.spectrum(g,"g")
 #Channel matrix
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
 #H=np.array([[0.5,0.1]])
-#H=np.ones([RA,SA])
+H=np.ones([RA,SA])
 f_est=[]
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fl=FLL(g,n_up)
@@ -140,8 +130,8 @@ for i in range(0,1):
     #!!!T anpassen!!!
     off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/n_up)
     r=receiver_.r*np.repeat(off,RA).reshape([-1,RA])
-    r_mf1=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-    r_mf=r_mf1[2*group_delay:-2*group_delay]
+    r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
+    r_mf=r_mf[2*group_delay:-2*group_delay]
 
 
     #Plot.timesignal(r_mf[:,0],"nach MF")
@@ -226,7 +216,7 @@ for i in range(0,1):
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #Frequency synchronisation
-    y=r_mf*np.exp(-1j*2*np.pi*f_est*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up).reshape([-1,RA])
+    y=r_mf*np.exp(-1j*2*np.pi*f_off*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up).reshape([-1,RA])
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #Early-Late
     diff=2
