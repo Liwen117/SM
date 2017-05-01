@@ -15,7 +15,7 @@ from sender import sender
 from receiver import receiver 
 #import test 
 from f_sync import DC 
-from takt_synchro import gardner_timing_recovery 
+from takt_synchro import gardner_timing_recovery ,feedforward_timing_sync
 #import time 
 from commpy.utilities import bitarray2dec  
 import matplotlib.pyplot as plt   
@@ -31,17 +31,17 @@ import matplotlib.pyplot as plt
 fc=1*1e9  # LTE
 offset_range=15*1e-6
 print("f_max=",fc*offset_range)
-SNR_dB=10
+SNR_dB=20
 #=Eb/N0
 #number of sender antennas
 SA=2
 #number of receiver antennas
 RA=1
 #data bits modulation order (BPSK)
-M=2
-mpsk_map=np.array([1,-1])
+M=4
+#mpsk_map=np.array([1,-1])
 #mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-#mpsk_map =1/np.sqrt(2) * np.array([1, 1j, -1j, -1], dtype=complex)
+mpsk_map =1/np.sqrt(2) * np.array([1, 1j, -1j, -1], dtype=complex)
 #number of symbols per Frames
 Ns=2
 #number of Frames
@@ -50,7 +50,7 @@ Nf=100
 N=Ns*Nf
 #number of training symbols
 N_known=64*4
-N=N_known*4
+N=N_known*3
 k=8
 #symbol duration
 T=1*1e-6
@@ -232,32 +232,30 @@ for i in range(0,1):
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #Frequency synchronisation
-    yy=r_mf*np.exp(-1j*2*np.pi*f_off*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up).reshape([-1,RA])
+    y=r_mf*np.exp(-1j*2*np.pi*f_off*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up).reshape([-1,RA])
+#Taktoffset    
+    y=y[takt_off:]
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Takt synchorinisation
-    takt=np.zeros(n_up)
-    y=yy[takt_off:]
-    for i in range(0,y.size-2):
-        if(np.abs( np.real(y[i+2]-y[i]))< np.abs(np.real(y[i+1]-y[i]))):
-           takt[np.mod(i,n_up)]+=1
-    print("takt_est=",n_up-1-np.argmax(takt))
-    ##Kommentar: braucht kein Vorwissen aber laengere Beobachtung
-    #ABER! Nach der Preamble fuer Sync kommt es Preamble zur Kanalschaetzung
-    #??????
-    
+#Feedforward
+    takt_est=feedforward_timing_sync(n_up,y,m,N_known)
+#    takt=np.zeros(n_up)
+#    y=y[n_up*m:n_up*(m+N_known)]
+#    for i in range(0,y.size-2):
+#        if(np.abs( np.real(y[i+2]-y[i]))< np.abs(np.real(y[i+1]-y[i]))):
+#           takt[np.mod(i,n_up)]+=1
+#    print("takt_est=",n_up-1-np.argmax(takt))
 
-        
 
-    
-        
         
         #%%%%%%%%%%%%%%%%%
 #    #Gardner
-#    y=r_mf[5:,0]
-#    #y=x_out[3:,0]
+#
 #    gardner.run(y[:,0])
 #    r_sync=gardner.output_symbols
+#    plt.figure()
 #    plt.plot(gardner.e); plt.title("Error signal e"); plt.show();
+#    plt.figure()
 #    plt.plot([np.rint(tau) for tau in gardner.tau]); plt.title("Estimated timing offset tau"); plt.ylim([-gardner.n_up//2-1, gardner.n_up//2+1]); plt.show();
 #    #plt.stem(r[::gardner.n_up]); plt.title("Unsynchronized receive symbols"); plt.show();
 #    #plt.stem(r_sync); plt.title("Synchronized receive symbols"); plt.show();    
