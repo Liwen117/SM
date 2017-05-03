@@ -163,8 +163,9 @@ def DC(r,T,symbols_known,n_up,L,k):
 #    Rd = np.asarray([np.sum(np.abs(r[i+L*n_up//k:i+L//k*2*n_up])**2) for i in range(len(r) - L//k*2*n_up)])  
 
     M = np.abs(Pd/Rd)**2
-    plt.plot(Pd)
     plt.figure()
+    plt.plot(Pd)
+#    plt.figure()
 #    plt.plot(Rd)
     plt.figure()    
     plt.stem(M)

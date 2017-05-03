@@ -31,16 +31,16 @@ import matplotlib.pyplot as plt
 fc=1*1e9  # LTE
 offset_range=15*1e-6
 print("f_max=",fc*offset_range)
-SNR_dB=10
+SNR_dB=50
 #=Eb/N0
 #number of sender antennas
-SA=4
+SA=2
 #number of receiver antennas
 RA=1
 #data bits modulation order (BPSK)
-M=4
-#mpsk_map=np.array([1,-1])
-mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
+M=2
+mpsk_map=np.array([1,-1])
+#mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
 #mpsk_map =1/np.sqrt(2) * np.array([1, 1j, -1j, -1], dtype=complex)
 #number of symbols per Frames
 Ns=2
@@ -49,8 +49,8 @@ Nf=100
 #number of symbols
 N=Ns*Nf
 #number of training symbols
-N_known=32*8
-N=N_known+200
+N_known=32*4
+N=N_known*2
 k=8
 #k= Anzahl der Wiederholungen,
 #symbol duration
@@ -59,7 +59,7 @@ T=1*1e-6
 #T=1
 #Frequency offset
 f_off=np.random.randint(-fc*offset_range,fc*offset_range)
-
+#f_off=10000
 #f_off=np.random.randint(-0.01/T,0.01/T)
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
@@ -68,14 +68,16 @@ print("f_off=",f_off)
 #n_off=2
 #phase offset
 phi_off=np.random.random()*2*np.pi
-
+phi_off=0
 #number of Index bits per symbol
 Ni=int(np.log2(SA))
 #number of Data bits per symbol
 Nd=int(np.log2(M))
 #Upsampling rate
 n_up=8
+
 takt_off=np.random.randint(1,n_up)
+#takt_off=0
 print("takt_off=",takt_off)
 # RRC Filter (L=K * sps + 1, sps, t_symbol, rho)
 K=40
@@ -84,6 +86,7 @@ g=filter_.ir()
 #Plot.spectrum(g,"g")
 #Channel matrix
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
+#H=np.array([[1-0.5*1j,1]])
 #H=np.array([[0.5,0.1,-0.3j,0.2+0.8j]])
 #H=np.array([[-0.3j,-0.3j,-0.3j,-0.3j]])
 #H=np.ones([RA,SA])
@@ -150,7 +153,7 @@ for i in range(0,1):
     off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/n_up)
     r=receiver_.r*np.repeat(off,RA).reshape([-1,RA])
     r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-    r_mf=r_mf[2*group_delay:-2*group_delay]*np.exp(1j*phi_off)
+    r_mf=r_mf[group_delay:-group_delay]*np.exp(1j*phi_off)
 
 
     #Plot.timesignal(r_mf[:,0],"nach MF")
@@ -233,10 +236,11 @@ for i in range(0,1):
 #    #plt.plot(M)
 #    f_est=1/(2*np.pi*L//2*T)*np.angle(Pd[np.argmax(M)])
 #    
+#    f_est=f_off
          #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #Frequency synchronisation
-    off_sync=np.exp(-1j*2*np.pi*f_est*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up)
+    off_sync=np.exp(-1j*2*np.pi*f_est*(np.arange(r_mf.shape[0])+group_delay)*T/n_up)
     yy=r_mf[:,0]*off_sync.reshape(r_mf[:,0].shape)
 #Taktoffset    
     y=yy[takt_off:]
@@ -245,7 +249,7 @@ for i in range(0,1):
 #Feedforward
 #    takt_est=feedforward_timing_sync(n_up,y,m,N_known,symbols_known)
     takt=np.zeros(n_up)
-    abw=1
+    abw=2
     y_s=y[n_up*(m-abw):n_up*(m+N_known+abw)]
 #    cnt=np.zeros(2*abw+1)
 
@@ -258,8 +262,25 @@ for i in range(0,1):
     takt_est=n_up-1-np.argmax(takt)
     print("takt_est=",takt_est)
     
+
+        
+        #%%%%%%%%%%%%%%%%%
+#    #Gardner
+#
+#    gardner.run(y)
+#    r_sync=gardner.output_symbols
+#plt.figure()
+#plt.plot(gardner.e); plt.title("Error signal e"); plt.show();
+#plt.figure()
+#plt.plot([np.rint(tau) for tau in gardner.tau]); plt.title("Estimated timing offset tau"); plt.ylim([-gardner.n_up//2-1, gardner.n_up//2+1]); plt.show();
+#    #plt.stem(r[::gardner.n_up]); plt.title("Unsynchronized receive symbols"); plt.show();
+#    #plt.stem(r_sync); plt.title("Synchronized receive symbols"); plt.show();    
+#        
+
+        #%%%%%%%%%%%%%%%%%
+        #feine Zeitsynchro
     y_symbol=y_s[np.argmax(takt)::n_up]
-    cnt=[]
+#    cnt=[]
 #    for i in range(0,y_symbol.size):
 #        if y_symbol[i]>0:
 #            y_symbol[i]=1
@@ -267,21 +288,21 @@ for i in range(0,1):
 #            y_symbol[i]=-1
 #    for a in range(0,2*abw+1):
 #        cnt.append(np.sum(np.sign(y_symbol[a:a+symbols_known.size])*np.sign(symbols_known)))
-
-        
         #%%%%%%%%%%%%%%%%%
-#    #Gardner
-#
-#    gardner.run(y[:,0])
-#    r_sync=gardner.output_symbols
-#    plt.figure()
-#    plt.plot(gardner.e); plt.title("Error signal e"); plt.show();
-#    plt.figure()
-#    plt.plot([np.rint(tau) for tau in gardner.tau]); plt.title("Estimated timing offset tau"); plt.ylim([-gardner.n_up//2-1, gardner.n_up//2+1]); plt.show();
-#    #plt.stem(r[::gardner.n_up]); plt.title("Unsynchronized receive symbols"); plt.show();
-#    #plt.stem(r_sync); plt.title("Synchronized receive symbols"); plt.show();    
-#        
-
+        #Channel estimation
+#    H_est=np.zeros([RA,SA],complex)
+    H_est=np.zeros((abw*2+1,1),complex)
+#    H[0,1]=np.average(y_symbol[:N_known/16*3]/symbols_known[:N_known/16*3])
+    i=np.zeros(SA)
+    for a in range(0,abw*2+1):
+        for k in range(0,N_known):
+            H_est[a,0]+= y_symbol[k-abw+a]/symbols_known[k]
+    #        i[index[k]]=i[index[k]]+1
+    #    H_est=H_est/np.repeat(i,RA).reshape(-1,RA).transpose()
+    H_est=H_est/N_known
+        
+        
+        
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Plot.konstellation(r_mf,'Signal after FLL')
 #Plot.timesignal(r_mf,'Signal after FLL')
@@ -332,12 +353,12 @@ for i in range(0,1):
 #print(f_off-f_off_coarse)
 #
 #    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-###Joint Estimation for f_off,n_start and CSI 
-##j=joint_estimation()
-##j.function(r_syc_coarse,N,N_known,T,ibits_known,symbols_known,SA,RA)
-##f_est=j.f_est
-##n_est=j.n_est
-##H_est=j.H_est
+##Joint Estimation for f_off,n_start and CSI 
+#j=joint_estimation()
+#j.function(r_syc_coarse,N,N_known,T,ibits_known,symbols_known,SA,RA)
+#f_est=j.f_est
+#n_est=j.n_est
+#H_est=j.H_est
    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ##Frequency synchronisation
 #off_syc=np.exp(-1j*2*np.pi*f_est*(np.arange(r_mf.shape[0]))*T)

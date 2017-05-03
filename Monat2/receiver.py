@@ -27,8 +27,8 @@ class receiver():
         self.mapp=mapp
         self.n_start=sender_.n_start
         self.r=self.channel(filter_.n_up)
-        self.r_mf=self.Matched_Filter(self.r.real)+1j*self.Matched_Filter(self.r.imag)
-        self.r_down = self.r_mf[::self.sps]
+#        self.r_mf=self.Matched_Filter(self.r.real)+1j*self.Matched_Filter(self.r.imag)
+#        self.r_down = self.r_mf[::self.sps]
 
         #self.detector(self.r_mf)
      #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     
@@ -36,6 +36,7 @@ class receiver():
     def channel(self,n_up):
         noise_variance_linear = 10**(-self.SNR_dB/ 10)
         s_a_index=np.repeat(bitarray2dec(self.ibits),self.sps)
+
 #        indices1=np.random.choice([4],self.n_start)
 #        indices2=np.random.choice([5],512-self.n_start-256)
 #        #turn index bits to the Antenne index 
@@ -55,7 +56,7 @@ class receiver():
         #initiate received signal in Bandpass
         for j in range(0,self.H.shape[0]):
             for i in range(0,self.s.size):
-                r[i,j]=self.s[i]*self.H[j,s_a_index[i//n_up]]
+                r[i,j]=self.s[i]*self.H[j,s_a_index[i]]
 
         n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(r.shape[0],r.shape[1])+1j*np.random.randn(r.shape[0],r.shape[1]))
         r=r+n

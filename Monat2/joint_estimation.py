@@ -20,6 +20,7 @@ class joint_estimation():
         for n in range(1,n_range):   
             f_estt=ML_approx_unknown(r_syc_coarse[n:n+N_known],T,symbols_known,ibits_known)
             #f_estt=ML_unknown(r_syc_coarse[n:n+N_known],T,symbols_known,ibits_known)
+#            f_estt=24486
             H_est=np.zeros([RA,SA],complex)  
             i=np.zeros(SA)
             #Channel estimation

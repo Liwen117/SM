@@ -57,13 +57,14 @@ def sc(L,Ni,k,mapp):
     #s2=np.repeat(pn2,L//len(pn2)/2)
     s = np.concatenate((pn, pn,pn,-pn,-pn,pn,pn,pn))
 #    ibits=np.random.choice([0],L*Ni).reshape((Ni,-1))
-    index=np.array([1,1,1,0,0,1,1,1,2,2,2,3,3,2,2,2])
-#    index=[0]
+    index=np.array([1,1,1,0,0,1,1,1])
+    index=[0]
 #    index=np.array([0,0,1,1,2,2,3,3])
     index=np.repeat(index,L//len(index))
     ibits=np.zeros((Ni,index.size))
     for i in range(0,index.size):
         ibits[:,i]=dec2bitarray(int(index[i]),Ni)
+#    plt.figure()
 #    plt.plot(index)
 #    ibits=np.random.choice([0,1],L//k*Ni).reshape((Ni,-1)).repeat(k,1)
     return ibits,s
