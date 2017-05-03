@@ -31,17 +31,17 @@ import matplotlib.pyplot as plt
 fc=1*1e9  # LTE
 offset_range=15*1e-6
 print("f_max=",fc*offset_range)
-SNR_dB=20
+SNR_dB=10
 #=Eb/N0
 #number of sender antennas
-SA=2
+SA=4
 #number of receiver antennas
 RA=1
 #data bits modulation order (BPSK)
 M=4
 #mpsk_map=np.array([1,-1])
-#mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
-mpsk_map =1/np.sqrt(2) * np.array([1, 1j, -1j, -1], dtype=complex)
+mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
+#mpsk_map =1/np.sqrt(2) * np.array([1, 1j, -1j, -1], dtype=complex)
 #number of symbols per Frames
 Ns=2
 #number of Frames
@@ -49,15 +49,17 @@ Nf=100
 #number of symbols
 N=Ns*Nf
 #number of training symbols
-N_known=64*4
-N=N_known*3
+N_known=32*8
+N=N_known+200
 k=8
+#k= Anzahl der Wiederholungen,
 #symbol duration
 T=1*1e-6
 #print("f_vernachlaessigbar=",0.01/N/T)
 #T=1
 #Frequency offset
 f_off=np.random.randint(-fc*offset_range,fc*offset_range)
+
 #f_off=np.random.randint(-0.01/T,0.01/T)
 #N_known=int(1//T//f_off/4)
 #N=10*N_known
@@ -66,7 +68,7 @@ print("f_off=",f_off)
 #n_off=2
 #phase offset
 phi_off=np.random.random()*2*np.pi
-phi_off=0
+
 #number of Index bits per symbol
 Ni=int(np.log2(SA))
 #number of Data bits per symbol
@@ -82,7 +84,8 @@ g=filter_.ir()
 #Plot.spectrum(g,"g")
 #Channel matrix
 H=1/np.sqrt(2)*((np.random.randn(RA,SA))+1j/np.sqrt(2)*(np.random.randn(RA,SA)))
-#H=np.array([[0.5,0.1]])
+#H=np.array([[0.5,0.1,-0.3j,0.2+0.8j]])
+#H=np.array([[-0.3j,-0.3j,-0.3j,-0.3j]])
 #H=np.ones([RA,SA])
 f_est=[]
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,7 +122,7 @@ for i in range(0,1):
     
         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     #with Filter
-    receiver_=receiver(H,sender_,SNR_dB,filter_,mpsk_map)
+    receiver_=receiver(H,sender_,SNR_dB,filter_,mpsk_map,s_BB)
     
     r=receiver_.r
     rr=receiver_.r
@@ -147,7 +150,7 @@ for i in range(0,1):
     off=np.exp(1j*2*np.pi*f_off*np.arange(sender_.bbsignal().size)*T/n_up)
     r=receiver_.r*np.repeat(off,RA).reshape([-1,RA])
     r_mf=receiver_.Matched_Filter(r.real)+1j*receiver_.Matched_Filter(r.imag)
-    r_mf=r_mf[2*group_delay:-2*group_delay]
+    r_mf=r_mf[2*group_delay:-2*group_delay]*np.exp(1j*phi_off)
 
 
     #Plot.timesignal(r_mf[:,0],"nach MF")
@@ -211,7 +214,11 @@ for i in range(0,1):
 
 #%%%%%%%%%%%%%%%%%
 #Modified Delay Correlation
-    f_est,m,M=DC(r_mf,T,symbols_known,n_up,N_known,k)
+    f_est,m,M=DC(r_mf[:,0],T,symbols_known,n_up,N_known,k)
+    print("f_est=",f_est)
+#    plt.plot(np.abs(M)); plt.ylabel("M"); plt.xlabel("d [Samples]"); plt.xlim([0, len(M)]); plt.ylim([0,1.1]); plt.title("M(d)"); plt.show()
+#    plt.plot(np.angle(Pd)); plt.title("arg(P(d))"); plt.xlabel("Verschiebung"); plt.xlim([0, len(M)]); plt.show()
+
 #    if m==-1:
 #        break
         #Schätzung fehlerbehaftet, kein ACK fuer Sender, Kanalschätzung wird nicht eingeschalten. 
@@ -226,26 +233,40 @@ for i in range(0,1):
 #    #plt.plot(M)
 #    f_est=1/(2*np.pi*L//2*T)*np.angle(Pd[np.argmax(M)])
 #    
-    print("f_est=",f_est)
-#    plt.plot(np.abs(M)); plt.ylabel("M"); plt.xlabel("d [Samples]"); plt.xlim([0, len(M)]); plt.ylim([0,1.1]); plt.title("M(d)"); plt.show()
-#    plt.plot(np.angle(Pd)); plt.title("arg(P(d))"); plt.xlabel("Verschiebung"); plt.xlim([0, len(M)]); plt.show()
-        #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+         #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #Frequency synchronisation
-    y=r_mf*np.exp(-1j*2*np.pi*f_off*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up).reshape([-1,RA])
+    off_sync=np.exp(-1j*2*np.pi*f_est*(np.arange(r_mf.shape[0])+2*group_delay)*T/n_up)
+    yy=r_mf[:,0]*off_sync.reshape(r_mf[:,0].shape)
 #Taktoffset    
-    y=y[takt_off:]
+    y=yy[takt_off:]
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Takt synchorinisation
 #Feedforward
-    takt_est=feedforward_timing_sync(n_up,y,m,N_known)
-#    takt=np.zeros(n_up)
-#    y=y[n_up*m:n_up*(m+N_known)]
-#    for i in range(0,y.size-2):
-#        if(np.abs( np.real(y[i+2]-y[i]))< np.abs(np.real(y[i+1]-y[i]))):
-#           takt[np.mod(i,n_up)]+=1
-#    print("takt_est=",n_up-1-np.argmax(takt))
+#    takt_est=feedforward_timing_sync(n_up,y,m,N_known,symbols_known)
+    takt=np.zeros(n_up)
+    abw=1
+    y_s=y[n_up*(m-abw):n_up*(m+N_known+abw)]
+#    cnt=np.zeros(2*abw+1)
 
+    for i in range(0,y.size-2):
+        diff_1=np.real(y[i+1]-y[i])
+        diff_2=np.real(y[i+2]-y[i])
+        if(np.abs(diff_1)>np.abs(diff_2)):
+           takt[np.mod(i,n_up)]+=1
+
+    takt_est=n_up-1-np.argmax(takt)
+    print("takt_est=",takt_est)
+    
+    y_symbol=y_s[np.argmax(takt)::n_up]
+    cnt=[]
+#    for i in range(0,y_symbol.size):
+#        if y_symbol[i]>0:
+#            y_symbol[i]=1
+#        else:
+#            y_symbol[i]=-1
+#    for a in range(0,2*abw+1):
+#        cnt.append(np.sum(np.sign(y_symbol[a:a+symbols_known.size])*np.sign(symbols_known)))
 
         
         #%%%%%%%%%%%%%%%%%

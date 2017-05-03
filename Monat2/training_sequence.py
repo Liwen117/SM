@@ -40,9 +40,10 @@ def training_symbols(N,Nd,Ni):
     return ibits,dbits
 #
 #ib,db=training_symbols(32,1,2)
-def sc(L,Ni,k):
+def sc(L,Ni,k,mapp):
 
-    pn = np.random.choice([-1, 1,1j,-1j], L//k) 
+    pn =np.random.choice(mapp, L//k) 
+#    pn=np.random.choice([mapp[0]], L//k) 
 #    pn1=[1,1,1,-1,-1,1,1,1]
     #pn1=[1,1,1,-1,-1,1,1,-1] #ein Plateau+5 Peaks
     #k-1 Peaks
@@ -56,13 +57,13 @@ def sc(L,Ni,k):
     #s2=np.repeat(pn2,L//len(pn2)/2)
     s = np.concatenate((pn, pn,pn,-pn,-pn,pn,pn,pn))
 #    ibits=np.random.choice([0],L*Ni).reshape((Ni,-1))
-    index=np.array([1,1,0,0,1,1,0,0])
-    index=[0]
+    index=np.array([1,1,1,0,0,1,1,1,2,2,2,3,3,2,2,2])
+#    index=[0]
 #    index=np.array([0,0,1,1,2,2,3,3])
     index=np.repeat(index,L//len(index))
     ibits=np.zeros((Ni,index.size))
     for i in range(0,index.size):
         ibits[:,i]=dec2bitarray(int(index[i]),Ni)
-    #plt.plot(index)
+#    plt.plot(index)
 #    ibits=np.random.choice([0,1],L//k*Ni).reshape((Ni,-1)).repeat(k,1)
     return ibits,s

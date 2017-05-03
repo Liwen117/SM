@@ -22,16 +22,17 @@ class sender():
         #self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
         self.n_start=np.random.randint(0,N_simu-N)      
 #        self.n_start=17
-        self.generate_simu_bits(N_simu,N,Nd,Ni,k)
+        self.generate_simu_bits(N_simu,N,Nd,Ni,k,mapp)
         self.bbsignal()
+
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    def generate_simu_bits(self,N_simu,N,Nd,Ni,k):
+    def generate_simu_bits(self,N_simu,N,Nd,Ni,k,mapp):
 
 #Normal Mode
         #self.ibits_known,self.dbits_known=tr.training_symbols(N,Nd,Ni)
 #Schmidl & Cox BPSK
-        self.ibits_known,self.symbols_known=tr.sc(N,Ni,k)
-        self.ibits=np.concatenate((np.random.choice([0],self.n_start*Ni).reshape((Ni,-1)),self.ibits_known,np.random.choice([0],(N_simu-self.n_start-N)*Ni).reshape((Ni,-1))),1 )     
+        self.ibits_known,self.symbols_known=tr.sc(N,Ni,k,mapp)
+        self.ibits=np.concatenate((np.random.choice([0],self.n_start*Ni).reshape((Ni,-1)),self.ibits_known,np.random.choice([1],(N_simu-self.n_start-N)*Ni).reshape((Ni,-1))),1 )     
 #        dbits=np.concatenate((np.random.choice([0,1],self.n_start*Nd).reshape((Nd,-1)),self.dbits_known,np.random.choice([0,1],(N_simu-self.n_start-N)*Nd).reshape((Nd,-1))),1 )
         #return ibits,dbits
     
@@ -82,10 +83,12 @@ class sender():
 
     def bbsignal(self):
         #self.divide_index_data_bits()
+#        group_delay = (self.ir.size - 1) // 2
         self.databits_mapping(self.Nd,self.N_simu,self.N)
         s_BBr=self.databits_pulseforming(np.real(self.symbols))
         s_BBi=self.databits_pulseforming(np.imag(self.symbols))
         return s_BBr+1j*s_BBi
+#        return s_BBr[group_delay:-group_delay]+1j*s_BBi[group_delay:-group_delay]
 #    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #    def anti_image(self,signal):
 #        SIGNAL = np.abs(np.fft.fftshift(np.fft.fft(signal)))**2/signal.size
