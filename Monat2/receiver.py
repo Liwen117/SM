@@ -56,7 +56,7 @@ class receiver():
         #initiate received signal in Bandpass
         for j in range(0,self.H.shape[0]):
             for i in range(0,self.s.size):
-                r[i,j]=self.s[i]*self.H[j,s_a_index[i]]
+                r[i,j]=self.s[i]*self.H[j,int(s_a_index[i])]
 
         n = np.sqrt(noise_variance_linear / 2) * (np.random.randn(r.shape[0],r.shape[1])+1j*np.random.randn(r.shape[0],r.shape[1]))
         r=r+n

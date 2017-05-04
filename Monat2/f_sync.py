@@ -163,10 +163,10 @@ def DC(r,T,symbols_known,n_up,L,k):
 #    Rd = np.asarray([np.sum(np.abs(r[i+L*n_up//k:i+L//k*2*n_up])**2) for i in range(len(r) - L//k*2*n_up)])  
 
     M = np.abs(Pd/Rd)**2
-    plt.figure()
-    plt.plot(Pd)
 #    plt.figure()
-#    plt.plot(Rd)
+#    plt.plot(Pd)
+##    plt.figure()
+##    plt.plot(Rd)
     plt.figure()    
     plt.stem(M)
 ##    np.argmax(M)/n_up
@@ -197,7 +197,7 @@ def DC(r,T,symbols_known,n_up,L,k):
             f_est=1/(2*np.pi*L//k*T)*np.average(np.angle(Pd[int(m*n_up+n_up*5.25*L//k):int(m*n_up+n_up*5.75*L//k)]))
 #    print("cnt=",cnt)
 #    print("SUM M=:",np.sum(M)/L/n_up)
-    return f_est,np.round(m),M
+    return f_est,np.round(m)
             
 
 

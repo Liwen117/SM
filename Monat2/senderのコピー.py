@@ -19,19 +19,13 @@ class sender():
         self.ir=filter_.ir()
         self.sps=filter_.n_up
         self.index_SA=0
-        self.k=k
         #self.ibits,self.dbits=self.generate_simu_bits(N_simu,N,Nd,Ni)
-        #self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))     
+        #self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))
+        self.n_start=np.random.randint(0,N_simu-N)      
 #        self.n_start=17
+        self.generate_simu_bits(N_simu,N,Nd,Ni,k,mapp)
+        self.bbsignal()
 
-    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
-    def send(self):
-        if self.index_SA==0:
-            self.generate_simu_bits(self.N_simu,self.N,self.Nd,self.Ni,self.k,self.mapp)  
-            self.bbsignal()
-        else:
-            self.generate_simu_bits(0,self.N,self.Nd,self.Ni,self.k,self.mapp)  
-            self.bbsignal()
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     def generate_random_ibits(self,N,Ni):        
         return np.random.choice([0,1],N*Ni) 
@@ -40,15 +34,13 @@ class sender():
         return np.random.choice([0,1],N*Nd)
 
     def generate_preambel(self,N,Ni,Nd,k,mapp):
-        self.ibits_known=tr.ts_i(self.N,self.k,self.Nd)
-        self.dbits_known=tr.ts_d(self.N,Ni,self.index_SA)
+        self.ibits_known,self.symbols_known=tr.sc(N,Ni,k,Nd,self.index_SA)
         self.index_SA+=1
-        return self.ibits_known,self.dbits_known
         
-    def generate_simu_bits(self,N_simu,N,Nd,Ni,k,mapp):  
-        self.generate_preambel(N,Ni,Nd,k,mapp)
-        self.ibits=np.concatenate((self.generate_random_ibits(N_simu,Ni).reshape((Ni,-1)),self.ibits_known),1 ) 
-        self.dbits=np.concatenate((self.generate_random_dbits(N_simu,Nd).reshape((Nd,-1)),self.dbits_known),1)
+    def generate_simu_bits(self,N_simu,N,Nd,Ni,k,mapp):
+        
+        self.ibits=np.concatenate((self.generate_random_ibits(N_simu-N,Ni).reshape((Ni,-1)),self.ibits_known,np.random.choice([0,1],(N_simu-self.n_start-N)*Ni).reshape((Ni,-1))),1 ) 
+        self.dbits=np.concatenate()
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #    def divide_index_data_bits(self):
 #        #if (idbits.size % (Ni+Nd) !=0):
@@ -60,10 +52,10 @@ class sender():
 #        self.ibits= ibits
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     def databits_mapping(self,Nd,N_simu,N):
-        indices1=bitarray2dec(self.generate_random_dbits(N_simu-N,Nd).reshape((Nd,-1)))
-#        indices2=bitarray2dec(np.random.choice([0,1],(N_simu-self.n_start-N)*Nd).reshape((Nd,-1)))
-        self.symbols_known=self.mapp[bitarray2dec(self.dbits_known) ]
-        self.symbols=np.concatenate((self.mapp[indices1],self.symbols_known))
+        indices1=bitarray2dec(np.random.choice([0,1],self.n_start*Nd).reshape((Nd,-1)))
+        indices2=bitarray2dec(np.random.choice([0,1],(N_simu-self.n_start-N)*Nd).reshape((Nd,-1)))
+        #self.symbols_known=self.mapp[bitarray2dec(self.dbits_known) ]
+        self.symbols=np.concatenate((self.mapp[indices1],self.symbols_known,self.mapp[indices2]))
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     def databits_pulseforming(self,symbols):
         #repeat value
@@ -81,6 +73,19 @@ class sender():
 #        return np.convolve(self.ir, symbols_up)
             
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+    def only_upsampling(self):
+#repeat value
+        symbols_up = np.repeat(self.symbols,self.sps)
+         #??? which one is right/better???
+         #zero-padding
+#        symbols_up = np.zeros(self.symbols.size * self.sps)
+#        symbols_up[::self.sps] = self.symbols
+        self.symbols_up=symbols_up
+        return symbols_up
+
+    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+
     def bbsignal(self):
         #self.divide_index_data_bits()
         group_delay = (self.ir.size - 1) // 2
@@ -89,7 +94,12 @@ class sender():
         s_BBi=self.databits_pulseforming(np.imag(self.symbols))
 #        return s_BBr+1j*s_BBi
         return s_BBr[group_delay:-group_delay]+1j*s_BBi[group_delay:-group_delay]
-
+#    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#    def anti_image(self,signal):
+#        SIGNAL = np.abs(np.fft.fftshift(np.fft.fft(signal)))**2/signal.size
+#        return SIGNAL
+#    
+    
     
     
     

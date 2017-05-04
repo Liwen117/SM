@@ -78,4 +78,4 @@ def MSE_SNR(SNR_range):
     return MSE_n,MSE_f
 
 
-MSE_n, MSE_f=MSE_SNR(np.arange(0,20))
+#MSE_n, MSE_f=MSE_SNR(np.arange(0,20))
