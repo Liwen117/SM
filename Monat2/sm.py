@@ -30,8 +30,8 @@ import Plot
 #carrier Frequency
 fc=1*1e9  # LTE
 offset_range=15*1e-6
-print("f_max=",fc*offset_range)
-SNR_dB=50
+#print("f_max=",fc*offset_range)
+SNR_dB=20
 #=Eb/N0
 #number of sender antennas
 SA=2
@@ -39,7 +39,7 @@ SA=2
 RA=1
 #data bits modulation order (BPSK)
 M=4
-#mpsk_map=np.array([1,-1])
+mpsk_map=np.array([1,-1])
 mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
 #number of symbols per Frames
 #Ns=2
@@ -49,7 +49,7 @@ mpsk_map =1/np.sqrt(2) * np.array([1+1j, -1+1j, 1-1j, -1-1j], dtype=complex)
 #N=Ns*Nf
 ##number of training symbols
 N_known=32*4
-N_simu=50
+N_simu=np.random.randint(N_known//2,N_known)
 k=8
 #k= Anzahl der Wiederholungen,
 #symbol duration
@@ -96,7 +96,7 @@ for index_SA in range(0,1):
 
     sender_=sender(N_simu,N_known,Ni,Nd,mpsk_map,filter_,k)
     sender_.send()
-    print("n_start=",N_simu,N_simu*n_up,(N_simu+N_known)*n_up)
+    print("n_start=",N_simu,"*n_up=",N_simu*n_up,"ende",(N_simu+N_known)*n_up)
     #training symbols(/bits) which may be shared with receiver, when a data-aided method is used
     symbols_known=sender_.symbols_known
     #symbols_known=ss
@@ -179,16 +179,21 @@ for index_SA in range(0,1):
 #Modified Delay Correlation
 
     f_est,m=DC(r_mf[:,0],T,symbols_known,n_up,N_known,k)
+#    f_estt,mm=DC(r_mf[m*n_up+N_known*n_up:,0],T,symbols_known,n_up,N_known,k)
+    
     if f_est==0 and m==-1:
         print("Fehler bei Schätzung")
         break
     
-    print("f_est=",f_est)
-    print("n_est=",m)
-    print("n_est-n_off=",m-N_simu)
+    print("f_est1=",f_est)
+    print("n_est1=",m)
+#    
+#    print("f_est2=",f_estt)
+#    print("n_est2=",mm)
+#    print("n_est-n_off=",m-N_simu)
 
     #f_est=1/(2*np.pi*L//2*T)*np.angle(Pd[np.argmax(M)])
-    #
+    
     #f_est=f_off
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #Frequency synchronisation
@@ -203,14 +208,17 @@ for index_SA in range(0,1):
     #takt_est=feedforward_timing_sync(n_up,y,m,N_known,symbols_known)
     takt=np.zeros(n_up)
     abw=3
-    y_s=y[n_up*(int(m)-abw):n_up*(int(m)+N_known+abw)]
+    y_s=y[n_up*(int(m)-abw-1):n_up*(int(m)+N_known+abw)]
     #cnt=np.zeros(2*abw+1)
-
-    for i in range(0,y.size-2):
-        diff_1=np.real(y[i+1]-y[i])
-        diff_2=np.real(y[i+2]-y[i])
-        if(np.abs(diff_1)>np.abs(diff_2)):
+    ab=np.zeros(abw*2+1)
+    for i in range(0,y_s.size-2):
+        diff_1r=np.real(y_s[i+1]-y_s[i])
+        diff_2r=np.real(y_s[i+2]-y_s[i])
+        diff_1i=np.imag(y_s[i+1]-y_s[i])
+        diff_2i=np.imag(y_s[i+2]-y_s[i])
+        if(np.abs(diff_1r)>np.abs(diff_2r)) and (np.abs(diff_1i)>np.abs(diff_2i)):
            takt[np.mod(i,n_up)]+=1
+#           if (diff_1r-diff_2r)*y_s[i].real>0:
 
     takt_est=n_up-1-np.argmax(takt)
     print("takt_est=",takt_est)
@@ -238,34 +246,36 @@ for index_SA in range(0,1):
 #Wiener Lee
 
     #H_est=np.zeros([RA,SA],complex)
-    #H_est=np.zeros((abw*2+1,1),complex)
-    #i=np.zeros(SA)
-    #for a in range(0,abw*2+1):
-    #    for k in range(0,N_known):
-    #        H_est[a,0]=np.average( y_symbol[k-abw+a]*np.conj(symbols_known[k]))
-    #H_est=H_est*1/np.dot(symbols_known,np.conj(symbols_known))*symbols_known.size
-
+#    H_est=np.zeros((abw*2+1,1),complex)
+#    i=np.zeros(SA)
+#    for a in range(0,abw*2+1):
+#        for k in range(0,N_known):
+#            H_est[a,0]=np.average( y_symbol[k-abw+a]*np.conj(symbols_known[k]))
+#    H_est=H_est*1/np.dot(symbols_known,np.conj(symbols_known))*symbols_known.size
+#    
 #%%%%%%%%%%%%%%%%%
 #LMS(Rekursiv)
-
+    
     mu=0.01
-    H_est=np.zeros((abw*2+1,1),complex)
-    for a in range(0,abw*2+1):
-        H_est[a,0]=y_symbol[a]*np.conj(symbols_known[0])
-        for k in range(1,N_known):
-            e=y_symbol[k+a]-H_est[a,0]*symbols_known[k]
-            H_est[a,0]+=mu*e
+    H_est=np.zeros((abw*2+1,SA),complex)
+#    plt.figure()
+    for index_SA in range(0,1):
+        for a in range(0,abw*2+1):
+            H_est[a,index_SA]=y_symbol[a]*np.conj(symbols_known[0+N_known*index_SA])
+            for k in range(1,N_known):
+                e=y_symbol[k+a+N_known*index_SA]-H_est[a,index_SA]*symbols_known[k+N_known*index_SA]
+                H_est[a,index_SA]+=mu*e
+        print("H_est=",H_est[abw+(int(m)-N_simu),index_SA])
 
-#%%%%%%%%%%%%%%%%%
-#      Sd= 
+
 #%%%%%%%%%%%%%%%%%       
        
        
        
        
        #%%%%%%%%%%%%%%%%%
-    print("H_est=",H_est[abw+(int(m)-N_simu)+1,0])
-    print("H=",H[0,0])
+#    print("H_est=",H_est[abw+(int(m)-N_simu),0])
+    print("H=",H[0,0],H[0,1])
             
     
     
@@ -282,12 +292,15 @@ for index_SA in range(0,1):
     #    cnt.append(np.sum(np.sign(y_symbol[a:a+symbols_known.size])*np.sign(symbols_known)))
     #
 
-
+            #%%%%%%%%%%%%%%%%%
+#reste Frequenzoffset
+            
+            
+            
    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-###Detection and Test 
-    #if CSI==true:
-    #    H_est=H  #with unknown CSI
-    #yi,yd=receiver_.detector(r_f_syc,H_est)
+##Detection and Test 
+    #H_est=H  #with unknown CSI
+    #yi,yd=receiver_.detector(r_sync,H_est)
     ##yi,yd=rr.detector(H_est,SNR_dB,mpsk_map,r_ft_syc)
     #BERi,BERd=test.BER(yi,yd,Ni,Nd,ibits,dbits)
 

@@ -20,12 +20,12 @@ class receiver():
         self.Ni=sender_.Ni
         self.Nd=sender_.Nd
         self.s=s_BB
-        self.symbols=sender_.only_upsampling()
+#        self.symbols=sender_.only_upsampling()
         self.SNR_dB=SNR_dB
         self.MF_ir=filter_.ir()
         self.sps=filter_.n_up
         self.mapp=mapp
-        self.n_start=sender_.n_start
+#        self.n_start=sender_.n_start
         self.r=self.channel(filter_.n_up)
 #        self.r_mf=self.Matched_Filter(self.r.real)+1j*self.Matched_Filter(self.r.imag)
 #        self.r_down = self.r_mf[::self.sps]

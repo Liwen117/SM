@@ -20,35 +20,39 @@ class sender():
         self.sps=filter_.n_up
         self.index_SA=0
         self.k=k
+        self.Ni_est=1
+#        self.Ni_est=2**Ni
         #self.ibits,self.dbits=self.generate_simu_bits(N_simu,N,Nd,Ni)
         #self.idbits=np.random.choice([0,1],self.N*(self.Ni+self.Nd))     
 #        self.n_start=17
 
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
     def send(self):
-        if self.index_SA==0:
             self.generate_simu_bits(self.N_simu,self.N,self.Nd,self.Ni,self.k,self.mapp)  
             self.bbsignal()
-        else:
-            self.generate_simu_bits(0,self.N,self.Nd,self.Ni,self.k,self.mapp)  
-            self.bbsignal()
+
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    def generate_random_ibits(self,N,Ni):        
-        return np.random.choice([0,1],N*Ni) 
+    def generate_random_ibits(self):        
+        return np.random.choice([0,1],self.N_simu*self.Ni) 
     
-    def generate_random_dbits(self,N,Nd):
-        return np.random.choice([0,1],N*Nd)
+    def generate_random_dbits(self):
+        return np.random.choice([0,1],self.N_simu*self.Nd)
 
     def generate_preambel(self,N,Ni,Nd,k,mapp):
-        self.ibits_known=tr.ts_i(self.N,self.k,self.Nd)
-        self.dbits_known=tr.ts_d(self.N,Ni,self.index_SA)
-        self.index_SA+=1
-        return self.ibits_known,self.dbits_known
+#        self.dbits_known=tr.ts_d(self.N,self.k,self.Nd)
+        self.symbols_known=[]
+        self.ibits_known=[]
+        for index_SA in range(0,self.Ni_est):
+            self.symbols_known=np.concatenate((self.symbols_known,tr.ts_d(self.N,self.k,self.mapp)))
+#            print(tr.ts_i(self.N, self.Ni,0).shape,tr.ts_i(self.N, self.Ni,1).shape)
+            self.ibits_known=np.append(self.ibits_known,tr.ts_i(self.N, self.Ni,index_SA))
+        return self.ibits_known,self.symbols_known
         
     def generate_simu_bits(self,N_simu,N,Nd,Ni,k,mapp):  
         self.generate_preambel(N,Ni,Nd,k,mapp)
-        self.ibits=np.concatenate((self.generate_random_ibits(N_simu,Ni).reshape((Ni,-1)),self.ibits_known),1 ) 
-        self.dbits=np.concatenate((self.generate_random_dbits(N_simu,Nd).reshape((Nd,-1)),self.dbits_known),1)
+        self.ibits=np.concatenate((self.generate_random_ibits().reshape((Ni,-1)),self.ibits_known.reshape((Ni,-1)),self.generate_random_ibits().reshape((Ni,-1))),1 ) 
+#        self.dbits=np.concatenate((self.generate_random_dbits(N_simu,Nd).reshape((Nd,-1)),self.dbits_known.reshape((Nd,-1))),1)
+
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #    def divide_index_data_bits(self):
 #        #if (idbits.size % (Ni+Nd) !=0):
@@ -60,10 +64,10 @@ class sender():
 #        self.ibits= ibits
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     def databits_mapping(self,Nd,N_simu,N):
-        indices1=bitarray2dec(self.generate_random_dbits(N_simu-N,Nd).reshape((Nd,-1)))
-#        indices2=bitarray2dec(np.random.choice([0,1],(N_simu-self.n_start-N)*Nd).reshape((Nd,-1)))
-        self.symbols_known=self.mapp[bitarray2dec(self.dbits_known) ]
-        self.symbols=np.concatenate((self.mapp[indices1],self.symbols_known))
+        indices1=bitarray2dec(self.generate_random_dbits().reshape((Nd,-1)))
+        indices2=bitarray2dec(self.generate_random_dbits().reshape((Nd,-1)))
+#        self.symbols_known=self.mapp[bitarray2dec(self.dbits_known.reshape((Nd,-1))) ]
+        self.symbols=np.concatenate((self.mapp[indices1],self.symbols_known,self.mapp[indices2]))
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
     def databits_pulseforming(self,symbols):
         #repeat value

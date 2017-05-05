@@ -171,8 +171,8 @@ def DC(r,T,symbols_known,n_up,L,k):
     plt.stem(M)
 ##    np.argmax(M)/n_up
 #    f_est=1/(2*np.pi*L//k*T)*np.angle(Pd[np.argmax(M)])
-#    plt.figure()
-#    plt.plot(1/(2*np.pi*L//k*T)*np.angle(Pd))
+    plt.figure()
+    plt.plot(1/(2*np.pi*L//k*T)*np.angle(Pd))
     m=0
     f_est=0
     cnt=0
@@ -186,6 +186,8 @@ def DC(r,T,symbols_known,n_up,L,k):
             m+=i/n_up              
             #f_est=1/(2*np.pi*L//k*T)*np.angle(Pd[i+4*L//k*n_up])
             cnt+=1
+#            if cnt==20:
+#                break
     if cnt==0:
         m=-1
 #        f_est=1/(2*np.pi*L//k*T)*np.angle(Pd[np.argmax(M)])

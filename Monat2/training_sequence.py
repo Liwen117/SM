@@ -40,9 +40,9 @@ def training_symbols(N,Nd,Ni):
     return ibits,dbits
 #
 #ib,db=training_symbols(32,1,2)
-def ts_d(L,k,Nd):
+def ts_d(L,k,mapp):
 
-    pn =np.random.choice([0,1], L//k*Nd) 
+    pn =np.random.choice(mapp, L//k) 
 #    pn =np.random.choice(mapp, L//k//2) 
 #    pn=np.random.choice([mapp[0]], L//k) 
 #    pn1=[1,1,1,-1,-1,1,1,1]
@@ -56,7 +56,8 @@ def ts_d(L,k,Nd):
     #s1=np.concatenate((pn1,pn1,pn1,pn1,pn1,pn1,pn1,pn1))
 #    s1=np.repeat(pn1,L//len(pn1))
     #s2=np.repeat(pn2,L//len(pn2)/2)
-    s = np.concatenate((pn, pn,pn,-pn,-pn,pn,pn,pn))
+#    pn_i=np.ones(pn.size)-pn
+    s = np.concatenate((pn, pn,pn,-pn,-pn,pn))
 #    s=np.concatenate((s,s))
 #    ibits=np.random.choice([0],L*Ni).reshape((Ni,-1))
     return s
@@ -72,4 +73,5 @@ def ts_i(L,Ni,index_SA):
 #    plt.figure()
 #    plt.plot(index)
 #    ibits=np.random.choice([0,1],L//k*Ni).reshape((Ni,-1)).repeat(k,1)
+
     return ibits
